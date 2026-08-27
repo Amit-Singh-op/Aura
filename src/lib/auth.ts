@@ -1,5 +1,5 @@
 import { jwtVerify, SignJWT } from 'jose';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import { cookies } from 'next/headers';
 
 const secretKey = process.env.JWT_SECRET || 'super-secret-default-key-please-change';
