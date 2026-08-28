@@ -24,6 +24,20 @@ export function ChatArea({ socket }: { socket: Socket | null }) {
   const [powerTextColor, setPowerTextColor] = useState('#ffffff');
   const [powerBgColor, setPowerBgColor] = useState('transparent');
 
+  // Mention Autocomplete States
+  const [allUsers, setAllUsers] = useState<{id: string, username: string}[]>([]);
+  const [mentionQuery, setMentionQuery] = useState<string | null>(null);
+  const [mentionIndex, setMentionIndex] = useState(0);
+
+  useEffect(() => {
+    fetch('/api/users')
+      .then(r => r.json())
+      .then(data => {
+        if (Array.isArray(data)) setAllUsers(data);
+      })
+      .catch(console.error);
+  }, []);
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -158,7 +172,34 @@ export function ChatArea({ socket }: { socket: Socket | null }) {
     setInputValue('');
     setReplyingTo(null);
     setIsSending(false);
+    setMentionQuery(null);
   };
+
+  const handleMentionSelect = (username: string) => {
+    if (!inputRef.current) return;
+    const cursor = inputRef.current.selectionStart;
+    const textBeforeCursor = inputValue.slice(0, cursor);
+    const textAfterCursor = inputValue.slice(cursor);
+    const match = textBeforeCursor.match(/@(\w*)$/);
+    
+    if (match) {
+      const startIdx = match.index!;
+      const newText = inputValue.slice(0, startIdx) + `@${username} ` + textAfterCursor;
+      setInputValue(newText);
+      setMentionQuery(null);
+      setTimeout(() => {
+        if (inputRef.current) {
+          inputRef.current.focus();
+          const newCursor = startIdx + username.length + 2;
+          inputRef.current.setSelectionRange(newCursor, newCursor);
+        }
+      }, 0);
+    }
+  };
+
+  const filteredMentionUsers = mentionQuery !== null
+    ? allUsers.filter(u => u.username.toLowerCase().startsWith(mentionQuery.toLowerCase()) && u.username !== currentUser?.username).slice(0, 5)
+    : [];
 
   const handleSendSticker = (sticker: Sticker) => {
     if (!socket || !currentUser || !activeRoomId) return;
@@ -518,6 +559,32 @@ export function ChatArea({ socket }: { socket: Socket | null }) {
 
         <form onSubmit={handleSend} className="flex gap-2 items-end max-w-4xl mx-auto relative bg-white/60 dark:bg-slate-900/60 backdrop-blur-2xl p-2 rounded-[2rem] shadow-lg shadow-indigo-500/5 border border-white/60 dark:border-slate-700/50 transition-all focus-within:ring-2 focus-within:ring-indigo-500/20 focus-within:bg-white/80 dark:focus-within:bg-slate-900/80">
           
+          {/* Mention Autocomplete Popup */}
+          {mentionQuery !== null && filteredMentionUsers.length > 0 && (
+            <div className="absolute bottom-[calc(100%+8px)] left-12 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl z-50 w-64 overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-200">
+              <div className="px-3 py-2 border-b border-slate-100 dark:border-slate-800/50 bg-slate-50/50 dark:bg-slate-800/20 text-xs font-semibold text-slate-500">
+                Mention someone
+              </div>
+              <div className="py-1">
+                {filteredMentionUsers.map((u, idx) => (
+                  <div
+                    key={u.id}
+                    onClick={() => handleMentionSelect(u.username)}
+                    className={`px-4 py-2 cursor-pointer flex items-center gap-3 transition-colors ${idx === mentionIndex ? 'bg-indigo-50 dark:bg-indigo-900/30' : 'hover:bg-slate-50 dark:hover:bg-slate-800/50'}`}
+                    onMouseEnter={() => setMentionIndex(idx)}
+                  >
+                    <div className="w-6 h-6 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-[10px] text-white font-bold shrink-0">
+                      {u.username.charAt(0).toUpperCase()}
+                    </div>
+                    <span className={`text-sm font-medium ${idx === mentionIndex ? 'text-indigo-700 dark:text-indigo-300' : 'text-slate-700 dark:text-slate-300'}`}>
+                      {u.username}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          
           {showMediaPicker && (
             <MediaPicker 
               onEmojiSelect={(emoji) => {
@@ -543,12 +610,48 @@ export function ChatArea({ socket }: { socket: Socket | null }) {
             value={inputValue}
             onFocus={() => setShowMediaPicker(false)}
             onChange={(e) => {
-              setInputValue(e.target.value);
+              const val = e.target.value;
+              setInputValue(val);
+              
+              // Mention parsing
+              const cursor = e.target.selectionStart;
+              const textBeforeCursor = val.slice(0, cursor);
+              const match = textBeforeCursor.match(/@(\w*)$/);
+              if (match) {
+                setMentionQuery(match[1]);
+                setMentionIndex(0);
+              } else {
+                setMentionQuery(null);
+              }
+
               if (socket && currentUser && activeRoomId) {
-                socket.emit('user_typing', { roomId: activeRoomId, username: currentUser.username, isTyping: e.target.value.length > 0 });
+                socket.emit('user_typing', { roomId: activeRoomId, username: currentUser.username, isTyping: val.length > 0 });
               }
             }}
             onKeyDown={(e) => {
+              if (mentionQuery !== null && filteredMentionUsers.length > 0) {
+                if (e.key === 'ArrowDown') {
+                  e.preventDefault();
+                  setMentionIndex(prev => (prev + 1) % filteredMentionUsers.length);
+                  return;
+                }
+                if (e.key === 'ArrowUp') {
+                  e.preventDefault();
+                  setMentionIndex(prev => (prev - 1 + filteredMentionUsers.length) % filteredMentionUsers.length);
+                  return;
+                }
+                if (e.key === 'Enter' || e.key === 'Tab') {
+                  e.preventDefault();
+                  handleMentionSelect(filteredMentionUsers[mentionIndex].username);
+                  return;
+                }
+                if (e.key === 'Escape') {
+                  e.preventDefault();
+                  setMentionQuery(null);
+                  return;
+                }
+              }
+
               if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
                 handleSend(e);

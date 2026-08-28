@@ -56,6 +56,7 @@ export interface Notification {
 export interface UserRepository {
   createUser(user: Omit<User, 'id' | 'savedStickers'>): Promise<User>;
   findUserByUsername(username: string): Promise<User | null>;
+  getAllUsers(): Promise<User[]>;
   countUsers(): Promise<number>;
   saveStickerToUser(userId: string, stickerId: string): Promise<void>;
   getUserSavedStickers(userId: string): Promise<string[]>;

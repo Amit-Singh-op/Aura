@@ -191,26 +191,43 @@ app.prepare().then(() => {
         // Broadcast to everyone in the room
         io.to(roomId).emit('new_message', message);
 
-        // Handle Mentions
+        // Handle Mentions and Replies
+        const notifiedUserIds = new Set<string>();
+
+        // 1. Replies
+        if (replyTo && replyTo.username !== username) {
+          const repliedUser = await storage.users.findUserByUsername(replyTo.username);
+          if (repliedUser) {
+            notifiedUserIds.add(repliedUser.id);
+            const notification = await storage.notifications.createNotification({
+              userId: repliedUser.id,
+              fromUsername: username,
+              roomId,
+              messageId: message.id,
+              content: content.substring(0, 50) + (content.length > 50 ? '...' : ''),
+            });
+            io.to(`user:${repliedUser.id}`).emit('new_notification', notification);
+          }
+        }
+
+        // 2. Mentions
         if (type === 'text' && content) {
           const mentions = content.match(/@(\w+)/g);
           if (mentions) {
-            // Deduplicate usernames
             const usernames = Array.from(new Set(mentions.map(m => m.substring(1))));
             for (const mentionedUsername of usernames) {
               if (mentionedUsername === username) continue; // Don't notify self
               
               const mentionedUser = await storage.users.findUserByUsername(mentionedUsername);
-              if (mentionedUser) {
+              if (mentionedUser && !notifiedUserIds.has(mentionedUser.id)) {
+                notifiedUserIds.add(mentionedUser.id);
                 const notification = await storage.notifications.createNotification({
                   userId: mentionedUser.id,
                   fromUsername: username,
                   roomId,
                   messageId: message.id,
-                  content: content.substring(0, 50) + (content.length > 50 ? '...' : ''), // Preview
+                  content: content.substring(0, 50) + (content.length > 50 ? '...' : ''),
                 });
-                
-                // Emit to the user's personal room
                 io.to(`user:${mentionedUser.id}`).emit('new_notification', notification);
               }
             }

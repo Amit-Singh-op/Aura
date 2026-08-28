@@ -19,6 +19,10 @@ export class MemoryUserRepository implements UserRepository {
     return users.find((u) => u.username.toLowerCase() === username.toLowerCase()) || null;
   }
 
+  async getAllUsers(): Promise<User[]> {
+    return users.map(({ id, username, role }) => ({ id, username, role } as User)); // excluding sensitive/unnecessary data if we want, but User interface has passwordHash. We should probably omit passwordHash for this return type ideally, but we'll just return it and let the API filter it. Actually, returning the array is fine.
+  }
+
   async countUsers(): Promise<number> {
     return users.length;
   }
