@@ -7,6 +7,7 @@ import { Send, MessageSquareDashed, SmilePlus, Download, X, Sparkles, ChevronLef
 import { Message, Sticker } from '@/lib/storage/types';
 import { MediaPicker } from './MediaPicker';
 import { PowerShower } from './PowerShower';
+import { SwipeToReply } from './SwipeToReply';
 
 export function ChatArea({ socket }: { socket: Socket | null }) {
   const { activeRoomId, setActiveRoomId, rooms, currentUser, messages, setMessages, addMessage } = useChatStore();
@@ -306,101 +307,106 @@ export function ChatArea({ socket }: { socket: Socket | null }) {
                 
                 <div className={`flex flex-col ${isOwn ? 'items-end' : 'items-start'} max-w-[85vw] sm:max-w-[75%]`}>
                   <div className={`flex items-center gap-2 ${isOwn ? 'flex-row-reverse' : 'flex-row'}`}>
-                    <div 
-                    id={`msg-bubble-${item.msg.id}`}
-                    className={`
-                      relative px-4 py-2.5 rounded-3xl break-words text-[15px] leading-relaxed shadow-sm transition-all duration-300 group/bubble
-                      ${isOwn 
-                        ? 'bg-gradient-to-br from-indigo-500 to-purple-600 text-white rounded-tr-sm shadow-indigo-500/20' 
-                        : 'bg-white/80 dark:bg-slate-800/80 backdrop-blur-md text-slate-800 dark:text-slate-100 rounded-tl-sm border border-white/60 dark:border-slate-700/50'}
-                      ${isReplyToMe ? 'ring-2 ring-indigo-500/50 dark:ring-indigo-400/50 shadow-[0_0_15px_rgba(99,102,241,0.25)]' : ''}
-                      ${item.msg.type === 'sticker' ? '!p-0 !bg-transparent !bg-none !border-none !shadow-none !ring-0' : ''}
-                      ${hasReply && item.msg.type !== 'sticker' ? 'pt-2' : ''}
-                    `}
-                  >
-                    {/* Quoted Reply Block */}
-                    {hasReply && (
+                    <SwipeToReply onReply={() => {
+                      setReplyingTo(item.msg);
+                      setTimeout(() => inputRef.current?.focus(), 0);
+                    }}>
                       <div 
-                        onClick={() => {
-                           // Scroll to replied message if it exists in DOM
-                           const repliedEl = document.getElementById(`msg-bubble-${item.msg.replyTo!.id}`);
-                           if (repliedEl) {
-                             repliedEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                             // Add focus highlight effect without adding a border
-                             repliedEl.classList.add('scale-105', 'brightness-110', 'saturate-150', 'z-50', 'shadow-2xl');
-                             setTimeout(() => {
-                               repliedEl.classList.remove('scale-105', 'brightness-110', 'saturate-150', 'z-50', 'shadow-2xl');
-                             }, 1500);
-                           }
-                        }}
-                        className={`
-                          mb-2 p-2 rounded-xl text-sm border-l-4 cursor-pointer transition-all hover:opacity-80
-                          ${isOwn 
-                            ? 'bg-white/20 border-white/50 text-white/90' 
-                            : 'bg-slate-100/50 dark:bg-slate-700/50 border-indigo-400 dark:border-indigo-500 text-slate-600 dark:text-slate-300'}
-                          ${item.msg.type === 'sticker' ? 'bg-white/80 dark:bg-slate-800/80 backdrop-blur-md shadow-sm mb-1' : ''}
-                        `}
-                      >
-                        <div className={`font-bold text-xs mb-0.5 ${isOwn ? 'text-white' : 'text-indigo-600 dark:text-indigo-400'}`}>
-                          {item.msg.replyTo!.username}
-                        </div>
-                        {item.msg.replyTo!.type === 'sticker' ? (
-                          <div className="flex items-center gap-1 opacity-80">
-                            <Sparkles className="w-3 h-3" /> <span className="italic">Sticker</span>
+                      id={`msg-bubble-${item.msg.id}`}
+                      className={`
+                        relative px-4 py-2.5 rounded-3xl break-words text-[15px] leading-relaxed shadow-sm transition-all duration-300 group/bubble
+                        ${isOwn 
+                          ? 'bg-gradient-to-br from-indigo-500 to-purple-600 text-white rounded-tr-sm shadow-indigo-500/20' 
+                          : 'bg-white/80 dark:bg-slate-800/80 backdrop-blur-md text-slate-800 dark:text-slate-100 rounded-tl-sm border border-white/60 dark:border-slate-700/50'}
+                        ${isReplyToMe ? 'ring-2 ring-indigo-500/50 dark:ring-indigo-400/50 shadow-[0_0_15px_rgba(99,102,241,0.25)]' : ''}
+                        ${item.msg.type === 'sticker' ? '!p-0 !bg-transparent !bg-none !border-none !shadow-none !ring-0' : ''}
+                        ${hasReply && item.msg.type !== 'sticker' ? 'pt-2' : ''}
+                      `}
+                    >
+                      {/* Quoted Reply Block */}
+                      {hasReply && (
+                        <div 
+                          onClick={() => {
+                             // Scroll to replied message if it exists in DOM
+                             const repliedEl = document.getElementById(`msg-bubble-${item.msg.replyTo!.id}`);
+                             if (repliedEl) {
+                               repliedEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                               // Add focus highlight effect without adding a border
+                               repliedEl.classList.add('scale-105', 'brightness-110', 'saturate-150', 'z-50', 'shadow-2xl');
+                               setTimeout(() => {
+                                 repliedEl.classList.remove('scale-105', 'brightness-110', 'saturate-150', 'z-50', 'shadow-2xl');
+                               }, 1500);
+                             }
+                          }}
+                          className={`
+                            mb-2 p-2 rounded-xl text-sm border-l-4 cursor-pointer transition-all hover:opacity-80
+                            ${isOwn 
+                              ? 'bg-white/20 border-white/50 text-white/90' 
+                              : 'bg-slate-100/50 dark:bg-slate-700/50 border-indigo-400 dark:border-indigo-500 text-slate-600 dark:text-slate-300'}
+                            ${item.msg.type === 'sticker' ? 'bg-white/80 dark:bg-slate-800/80 backdrop-blur-md shadow-sm mb-1' : ''}
+                          `}
+                        >
+                          <div className={`font-bold text-xs mb-0.5 ${isOwn ? 'text-white' : 'text-indigo-600 dark:text-indigo-400'}`}>
+                            {item.msg.replyTo!.username}
                           </div>
-                        ) : (
-                          <div className="line-clamp-2 leading-tight whitespace-pre-wrap [word-break:break-word]">
-                            {item.msg.replyTo!.content}
-                          </div>
-                        )}
-                      </div>
-                    )}
-                    
-                    {item.msg.type === 'sticker' ? (
-                      <div className="relative group/sticker inline-block p-1" id={`msg-${item.msg.id}`}>
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img 
-                          src={item.msg.content} 
-                          alt="Sticker" 
-                          className={`max-w-[200px] max-h-[200px] object-contain hover:scale-105 transition-transform duration-200 cursor-pointer ${
-                            isOwn 
-                              ? 'rounded-2xl border-2 border-indigo-400/60 dark:border-indigo-500/60 shadow-[0_0_20px_rgba(99,102,241,0.3)] bg-white/20 dark:bg-slate-900/40 backdrop-blur-md p-1.5' 
-                              : 'rounded-2xl border-2 border-white/80 dark:border-slate-700/60 shadow-[0_4px_12px_rgba(0,0,0,0.1)] bg-white/40 dark:bg-slate-800/40 backdrop-blur-md p-1.5'
-                          }`} 
-                        />
-                      </div>
-                    ) : item.msg.type === 'power' ? (
-                      <div 
-                        className={`relative p-3 sm:p-5 rounded-2xl cursor-pointer hover:scale-105 hover:-translate-y-1 transition-all duration-300 shadow-xl overflow-hidden group/power ${item.msg.powerOptions?.bgColor === 'transparent' ? (isOwn ? 'bg-gradient-to-r from-indigo-500/40 to-purple-500/40' : 'bg-white/40 dark:bg-slate-800/40') : ''}`}
-                        style={{
-                          backgroundColor: item.msg.powerOptions?.bgColor === 'transparent' ? undefined : item.msg.powerOptions?.bgColor,
-                          color: item.msg.powerOptions?.textColor || '#fff',
-                        }}
-                        onClick={() => {
-                          setPowerAnimations(prev => [...prev, {
-                            id: `${item.msg.id}-${Date.now()}`,
-                            text: item.msg.content,
-                            textColor: item.msg.powerOptions?.textColor || '#fff',
-                            bgColor: item.msg.powerOptions?.bgColor || 'transparent'
-                          }]);
-                        }}
-                        title="Click to replay animation!"
-                      >
-                        <div className="absolute inset-0 bg-white/20 opacity-0 group-hover/power:opacity-100 transition-opacity"></div>
-                        <div className="flex items-center gap-1.5 mb-1 opacity-80 mix-blend-overlay">
-                          <Sparkles className="w-3.5 h-3.5 animate-pulse" />
-                          <span className="text-[10px] font-bold uppercase tracking-widest">Power Message</span>
+                          {item.msg.replyTo!.type === 'sticker' ? (
+                            <div className="flex items-center gap-1 opacity-80">
+                              <Sparkles className="w-3 h-3" /> <span className="italic">Sticker</span>
+                            </div>
+                          ) : (
+                            <div className="line-clamp-2 leading-tight whitespace-pre-wrap [word-break:break-word]">
+                              {item.msg.replyTo!.content}
+                            </div>
+                          )}
                         </div>
-                        <div className="font-black text-3xl sm:text-5xl tracking-tighter drop-shadow-[0_4px_8px_rgba(0,0,0,0.3)]">
+                      )}
+                      
+                      {item.msg.type === 'sticker' ? (
+                        <div className="relative group/sticker inline-block p-1" id={`msg-${item.msg.id}`}>
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img 
+                            src={item.msg.content} 
+                            alt="Sticker" 
+                            className={`max-w-[200px] max-h-[200px] object-contain hover:scale-105 transition-transform duration-200 cursor-pointer ${
+                              isOwn 
+                                ? 'rounded-2xl border-2 border-indigo-400/60 dark:border-indigo-500/60 shadow-[0_0_20px_rgba(99,102,241,0.3)] bg-white/20 dark:bg-slate-900/40 backdrop-blur-md p-1.5' 
+                                : 'rounded-2xl border-2 border-white/80 dark:border-slate-700/60 shadow-[0_4px_12px_rgba(0,0,0,0.1)] bg-white/40 dark:bg-slate-800/40 backdrop-blur-md p-1.5'
+                            }`} 
+                          />
+                        </div>
+                      ) : item.msg.type === 'power' ? (
+                        <div 
+                          className={`relative p-3 sm:p-5 rounded-2xl cursor-pointer hover:scale-105 hover:-translate-y-1 transition-all duration-300 shadow-xl overflow-hidden group/power ${item.msg.powerOptions?.bgColor === 'transparent' ? (isOwn ? 'bg-gradient-to-r from-indigo-500/40 to-purple-500/40' : 'bg-white/40 dark:bg-slate-800/40') : ''}`}
+                          style={{
+                            backgroundColor: item.msg.powerOptions?.bgColor === 'transparent' ? undefined : item.msg.powerOptions?.bgColor,
+                            color: item.msg.powerOptions?.textColor || '#fff',
+                          }}
+                          onClick={() => {
+                            setPowerAnimations(prev => [...prev, {
+                              id: `${item.msg.id}-${Date.now()}`,
+                              text: item.msg.content,
+                              textColor: item.msg.powerOptions?.textColor || '#fff',
+                              bgColor: item.msg.powerOptions?.bgColor || 'transparent'
+                            }]);
+                          }}
+                          title="Click to replay animation!"
+                        >
+                          <div className="absolute inset-0 bg-white/20 opacity-0 group-hover/power:opacity-100 transition-opacity"></div>
+                          <div className="flex items-center gap-1.5 mb-1 opacity-80 mix-blend-overlay">
+                            <Sparkles className="w-3.5 h-3.5 animate-pulse" />
+                            <span className="text-[10px] font-bold uppercase tracking-widest">Power Message</span>
+                          </div>
+                          <div className="font-black text-3xl sm:text-5xl tracking-tighter drop-shadow-[0_4px_8px_rgba(0,0,0,0.3)]">
+                            {item.msg.content}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="relative whitespace-pre-wrap [word-break:break-word]" id={`msg-${item.msg.id}`}>
                           {item.msg.content}
                         </div>
+                      )}
                       </div>
-                    ) : (
-                      <div className="relative whitespace-pre-wrap [word-break:break-word]" id={`msg-${item.msg.id}`}>
-                        {item.msg.content}
-                      </div>
-                    )}
-                  </div>
+                    </SwipeToReply>
                   
                   {/* Action Buttons */}
                   <div className="flex gap-1.5 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all self-center shrink-0">
