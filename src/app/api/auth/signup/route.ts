@@ -15,13 +15,10 @@ export async function POST(req: Request) {
     }
 
     const hashedPassword = await hashPassword(data.password);
-    const userCount = await storage.users.countUsers();
-    const role = userCount === 0 ? 'admin' : 'user'; // First user is admin
-
     const user = await storage.users.createUser({
       username: data.username,
       passwordHash: hashedPassword,
-      role,
+      role: 'user',
     });
 
     const token = await signToken({ userId: user.id, username: user.username, role: user.role });

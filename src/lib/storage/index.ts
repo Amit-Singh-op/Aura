@@ -32,6 +32,30 @@ if (process.env.USE_DB === 'true') {
       messages: new MemoryMessageRepository(),
       stickers: new MemoryStickerRepository(),
     };
+
+    // Initialize default admin and general room
+    (async () => {
+      try {
+        const bcrypt = await import('bcryptjs');
+        const adminHash = await bcrypt.hash('admindoesntmatter', 10);
+        
+        await global.__storageBackend!.users.createUser({
+          username: 'admin',
+          passwordHash: adminHash,
+          role: 'admin'
+        });
+
+        await global.__storageBackend!.rooms.createRoom({
+          name: 'General',
+          description: 'General discussion',
+          icon: '🌍'
+        });
+        
+        console.log('Default admin and room initialized successfully.');
+      } catch (err) {
+        console.error('Failed to initialize default storage', err);
+      }
+    })();
   }
   storage = global.__storageBackend;
 }

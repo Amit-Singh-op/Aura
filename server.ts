@@ -32,7 +32,8 @@ app.prepare().then(() => {
   });
 
   // Keep track of which users are in which rooms to broadcast presence
-  const roomUsers = new Map<string, Map<string, string>>();
+  // Map<roomId, Map<userId, { username: string, sockets: Set<socketId> }>>
+  const roomUsers = new Map<string, Map<string, { username: string, sockets: Set<string> }>>();
 
   io.on('connection', (socket: Socket) => {
     console.log('Client connected:', socket.id);
@@ -41,7 +42,7 @@ app.prepare().then(() => {
     const allPresence = Array.from(roomUsers.entries()).map(([roomId, userMap]) => ({
       roomId,
       count: userMap.size,
-      users: Array.from(userMap.entries()).map(([id, name]) => ({ id, name }))
+      users: Array.from(userMap.entries()).map(([id, data]) => ({ id, name: data.username }))
     }));
     socket.emit('initial_presence', allPresence);
 
@@ -53,9 +54,17 @@ app.prepare().then(() => {
       if (!roomUsers.has(roomId)) {
         roomUsers.set(roomId, new Map());
       }
-      roomUsers.get(roomId)!.set(userId, username);
+      
+      const roomMap = roomUsers.get(roomId)!;
+      if (!roomMap.has(userId)) {
+        roomMap.set(userId, { username, sockets: new Set() });
+      }
+      
+      const userPresence = roomMap.get(userId)!;
+      const isFirstConnection = userPresence.sockets.size === 0;
+      userPresence.sockets.add(socket.id);
 
-      const usersInRoom = Array.from(roomUsers.get(roomId)!.entries()).map(([id, name]) => ({ id, name }));
+      const usersInRoom = Array.from(roomMap.entries()).map(([id, d]) => ({ id, name: d.username }));
 
       // Notify EVERYONE globally
       io.emit('presence_update', {
@@ -64,14 +73,16 @@ app.prepare().then(() => {
         users: usersInRoom,
       });
 
-      socket.to(roomId).emit('system_message', {
-        id: crypto.randomUUID(),
-        roomId,
-        userId: 'system',
-        username: 'System',
-        content: `${username} joined the room.`,
-        timestamp: Date.now(),
-      });
+      if (isFirstConnection) {
+        socket.to(roomId).emit('system_message', {
+          id: crypto.randomUUID(),
+          roomId,
+          userId: 'system',
+          username: 'System',
+          content: `${username} joined the room.`,
+          timestamp: Date.now(),
+        });
+      }
       
       // Store socket custom data for disconnect handling
       socket.data.userId = userId;
@@ -84,23 +95,32 @@ app.prepare().then(() => {
       socket.leave(roomId);
 
       if (roomUsers.has(roomId)) {
-        roomUsers.get(roomId)!.delete(userId);
-        const usersInRoom = Array.from(roomUsers.get(roomId)!.entries()).map(([id, name]) => ({ id, name }));
-        io.emit('presence_update', {
-          roomId,
-          count: usersInRoom.length,
-          users: usersInRoom,
-        });
+        const roomMap = roomUsers.get(roomId)!;
+        const userPresence = roomMap.get(userId);
+        
+        if (userPresence) {
+          userPresence.sockets.delete(socket.id);
+          
+          if (userPresence.sockets.size === 0) {
+            roomMap.delete(userId);
+            socket.to(roomId).emit('system_message', {
+              id: crypto.randomUUID(),
+              roomId,
+              userId: 'system',
+              username: 'System',
+              content: `${username} left the room.`,
+              timestamp: Date.now(),
+            });
+          }
+          
+          const usersInRoom = Array.from(roomMap.entries()).map(([id, d]) => ({ id, name: d.username }));
+          io.emit('presence_update', {
+            roomId,
+            count: usersInRoom.length,
+            users: usersInRoom,
+          });
+        }
       }
-
-      socket.to(roomId).emit('system_message', {
-        id: crypto.randomUUID(),
-        roomId,
-        userId: 'system',
-        username: 'System',
-        content: `${username} left the room.`,
-        timestamp: Date.now(),
-      });
     });
 
     const rateLimits = new Map<string, { tokens: number; lastRefill: number }>();
@@ -158,22 +178,32 @@ app.prepare().then(() => {
       const { roomId, userId, username } = socket.data;
       if (roomId && userId) {
         if (roomUsers.has(roomId)) {
-          roomUsers.get(roomId)!.delete(userId);
-          const usersInRoom = Array.from(roomUsers.get(roomId)!.entries()).map(([id, name]) => ({ id, name }));
-          io.emit('presence_update', {
-            roomId,
-            count: usersInRoom.length,
-            users: usersInRoom,
-          });
+          const roomMap = roomUsers.get(roomId)!;
+          const userPresence = roomMap.get(userId);
+          
+          if (userPresence) {
+            userPresence.sockets.delete(socket.id);
+            
+            if (userPresence.sockets.size === 0) {
+              roomMap.delete(userId);
+              io.to(roomId).emit('system_message', {
+                id: crypto.randomUUID(),
+                roomId,
+                userId: 'system',
+                username: 'System',
+                content: `${username} left the room.`,
+                timestamp: Date.now(),
+              });
+            }
+            
+            const usersInRoom = Array.from(roomMap.entries()).map(([id, d]) => ({ id, name: d.username }));
+            io.emit('presence_update', {
+              roomId,
+              count: usersInRoom.length,
+              users: usersInRoom,
+            });
+          }
         }
-        io.to(roomId).emit('system_message', {
-          id: crypto.randomUUID(),
-          roomId,
-          userId: 'system',
-          username: 'System',
-          content: `${username} left the room.`,
-          timestamp: Date.now(),
-        });
       }
       console.log('Client disconnected:', socket.id);
     });
