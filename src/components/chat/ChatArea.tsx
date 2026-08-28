@@ -292,6 +292,8 @@ export function ChatArea({ socket }: { socket: Socket | null }) {
 
             const isOwn = item.msg.userId === currentUser?.id;
             const hasReply = !!item.msg.replyTo;
+            const isReplyToMe = !isOwn && hasReply && item.msg.replyTo?.username === currentUser?.username;
+            
             return (
               <div key={item.msg.id} className={`flex flex-col ${isOwn ? 'items-end' : 'items-start'} ${item.showHeader ? 'mt-6' : 'mt-1.5'} group`}>
                 {item.showHeader && (
@@ -305,14 +307,14 @@ export function ChatArea({ socket }: { socket: Socket | null }) {
                 <div className={`flex flex-col ${isOwn ? 'items-end' : 'items-start'} max-w-[85vw] sm:max-w-[75%]`}>
                   <div className={`flex items-center gap-2 ${isOwn ? 'flex-row-reverse' : 'flex-row'}`}>
                     <div 
-
                     id={`msg-bubble-${item.msg.id}`}
                     className={`
                       relative px-4 py-2.5 rounded-3xl break-words text-[15px] leading-relaxed shadow-sm transition-all duration-300 group/bubble
                       ${isOwn 
                         ? 'bg-gradient-to-br from-indigo-500 to-purple-600 text-white rounded-tr-sm shadow-indigo-500/20' 
                         : 'bg-white/80 dark:bg-slate-800/80 backdrop-blur-md text-slate-800 dark:text-slate-100 rounded-tl-sm border border-white/60 dark:border-slate-700/50'}
-                      ${item.msg.type === 'sticker' ? '!p-0 !bg-transparent !bg-none !border-none !shadow-none' : ''}
+                      ${isReplyToMe ? 'ring-2 ring-indigo-500/50 dark:ring-indigo-400/50 shadow-[0_0_15px_rgba(99,102,241,0.25)]' : ''}
+                      ${item.msg.type === 'sticker' ? '!p-0 !bg-transparent !bg-none !border-none !shadow-none !ring-0' : ''}
                       ${hasReply && item.msg.type !== 'sticker' ? 'pt-2' : ''}
                     `}
                   >
