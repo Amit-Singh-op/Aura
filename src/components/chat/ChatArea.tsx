@@ -255,7 +255,7 @@ export function ChatArea({ socket }: { socket: Socket | null }) {
     return parts.map((part, i) => {
       if (part.startsWith('@')) {
         return (
-          <span key={i} className={`font-bold px-1 rounded-md ${isOwnMessage ? 'text-white bg-white/30 drop-shadow-sm' : 'text-indigo-600 dark:text-indigo-400 bg-indigo-100 dark:bg-indigo-900/40'}`}>
+          <span key={i} className={`font-bold ${isOwnMessage ? 'text-white' : 'text-indigo-600 dark:text-indigo-400'}`}>
             {part}
           </span>
         );
