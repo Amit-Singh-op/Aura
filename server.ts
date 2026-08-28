@@ -242,6 +242,11 @@ app.prepare().then(() => {
       socket.to(data.roomId).emit('user_typing', data);
     });
 
+    socket.on('delete_room', (data: { id: string }) => {
+      // Broadcast to everyone else
+      socket.broadcast.emit('room_deleted', data);
+    });
+
     socket.on('disconnect', () => {
       const { roomId, userId, username } = socket.data;
       if (roomId && userId) {

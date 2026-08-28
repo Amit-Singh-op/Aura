@@ -14,7 +14,7 @@ export function Sidebar({ socket }: { socket: Socket | null }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showNotifications, setShowNotifications] = useState(false);
-  const { notifications, setNotifications, addNotification, markNotificationAsRead } = useChatStore();
+  const { notifications, setNotifications, addNotification, markNotificationAsRead, removeRoom } = useChatStore();
   const unreadCount = notifications.filter(n => !n.read).length;
 
   // Presence counts from socket
@@ -53,10 +53,15 @@ export function Sidebar({ socket }: { socket: Socket | null }) {
       addNotification(data);
     });
 
+    socket.on('room_deleted', (data: { id: string }) => {
+      removeRoom(data.id);
+    });
+
     return () => {
       socket.off('initial_presence');
       socket.off('presence_update');
       socket.off('new_notification');
+      socket.off('room_deleted');
     };
   }, [socket]);
 
@@ -96,8 +101,10 @@ export function Sidebar({ socket }: { socket: Socket | null }) {
     
     try {
       await fetch(`/api/rooms/${id}`, { method: 'DELETE' });
-      setRooms(rooms.filter(r => r.id !== id));
-      if (activeRoomId === id) setActiveRoomId(null);
+      removeRoom(id);
+      if (socket) {
+        socket.emit('delete_room', { id });
+      }
     } catch {
       console.error('Failed to delete room');
     }

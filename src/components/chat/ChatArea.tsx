@@ -10,7 +10,7 @@ import { PowerShower } from './PowerShower';
 import { SwipeToReply } from './SwipeToReply';
 
 export function ChatArea({ socket }: { socket: Socket | null }) {
-  const { activeRoomId, setActiveRoomId, rooms, currentUser, messages, setMessages, addMessage } = useChatStore();
+  const { activeRoomId, setActiveRoomId, rooms, currentUser, messages, setMessages, addMessage, notifications, markNotificationAsRead } = useChatStore();
   const [inputValue, setInputValue] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [typingUsers, setTypingUsers] = useState<string[]>([]);
@@ -46,6 +46,13 @@ export function ChatArea({ socket }: { socket: Socket | null }) {
 
   useEffect(() => {
     if (!activeRoomId || !currentUser) return;
+
+    // Mark notifications in this room as read
+    const unreadInRoom = notifications.filter(n => n.roomId === activeRoomId && !n.read);
+    unreadInRoom.forEach(n => {
+      markNotificationAsRead(n.id);
+      fetch(`/api/notifications/${n.id}`, { method: 'PATCH' }).catch(console.error);
+    });
 
     let loadInterval: NodeJS.Timeout;
     let isCancelled = false;
@@ -242,6 +249,20 @@ export function ChatArea({ socket }: { socket: Socket | null }) {
       </div>
     );
   }
+
+  const renderMessageContent = (content: string, isOwnMessage: boolean) => {
+    const parts = content.split(/(@\w+)/g);
+    return parts.map((part, i) => {
+      if (part.startsWith('@')) {
+        return (
+          <span key={i} className={`font-bold px-1 rounded-md ${isOwnMessage ? 'text-white bg-white/30 drop-shadow-sm' : 'text-indigo-600 dark:text-indigo-400 bg-indigo-100 dark:bg-indigo-900/40'}`}>
+            {part}
+          </span>
+        );
+      }
+      return part;
+    });
+  };
 
   // Group messages
   const groupedMessages: { type: 'system' | 'user'; msg: Message; showHeader: boolean }[] = [];
@@ -443,7 +464,7 @@ export function ChatArea({ socket }: { socket: Socket | null }) {
                         </div>
                       ) : (
                         <div className="relative whitespace-pre-wrap [word-break:break-word]" id={`msg-${item.msg.id}`}>
-                          {item.msg.content}
+                          {renderMessageContent(item.msg.content, isOwn)}
                         </div>
                       )}
                       </div>
