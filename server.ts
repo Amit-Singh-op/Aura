@@ -16,6 +16,29 @@ app.prepare().then(() => {
   const httpServer = createServer(async (req, res) => {
     try {
       const parsedUrl = parse(req.url!, true);
+
+      // Serve files from public/uploads manually to bypass Next.js production cache for dynamically added files
+      if (parsedUrl.pathname && parsedUrl.pathname.startsWith('/uploads/')) {
+        const path = await import('path');
+        const fs = await import('fs');
+        const filePath = path.join(process.cwd(), 'public', parsedUrl.pathname);
+        
+        if (fs.existsSync(filePath)) {
+          const ext = path.extname(filePath).toLowerCase();
+          let contentType = 'application/octet-stream';
+          if (ext === '.png') contentType = 'image/png';
+          else if (ext === '.jpg' || ext === '.jpeg') contentType = 'image/jpeg';
+          else if (ext === '.gif') contentType = 'image/gif';
+          else if (ext === '.webp') contentType = 'image/webp';
+          
+          res.setHeader('Content-Type', contentType);
+          res.setHeader('Cache-Control', 'public, max-age=31536000');
+          const stream = fs.createReadStream(filePath);
+          stream.pipe(res);
+          return;
+        }
+      }
+
       await handle(req, res, parsedUrl);
     } catch (err) {
       console.error('Error occurred handling', req.url, err);
