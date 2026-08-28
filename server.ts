@@ -159,13 +159,13 @@ app.prepare().then(() => {
         // Validate that room and user actually exist in storage
         const room = await storage.rooms.getRoom(roomId);
         if (!room) {
-          socket.emit('error', { message: 'This room no longer exists.' });
+          socket.emit('app_error', { message: 'This room no longer exists.' });
           return;
         }
 
         const user = await storage.users.findUserByUsername(username);
         if (!user || user.id !== userId) {
-          socket.emit('error', { message: 'User session invalid. Please log in again.' });
+          socket.emit('app_error', { message: 'User session invalid. Please log in again.' });
           return;
         }
         
@@ -182,7 +182,7 @@ app.prepare().then(() => {
         }
 
         if (limitInfo.tokens <= 0) {
-          socket.emit('error', { message: 'You are sending messages too fast. Please slow down.' });
+          socket.emit('app_error', { message: 'You are sending messages too fast. Please slow down.' });
           return;
         }
 

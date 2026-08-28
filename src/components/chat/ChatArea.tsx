@@ -128,7 +128,7 @@ export function ChatArea({ socket }: { socket: Socket | null }) {
         }
       });
 
-      socket.on('error', (data: { message: string }) => {
+      socket.on('app_error', (data: { message: string }) => {
         alert(data.message);
         if (data.message.includes('User session invalid')) {
           fetch('/api/auth/logout', { method: 'POST' }).finally(() => {
@@ -149,7 +149,7 @@ export function ChatArea({ socket }: { socket: Socket | null }) {
         socket.off('system_message');
         socket.off('user_typing');
         socket.off('presence_update');
-        socket.off('error');
+        socket.off('app_error');
       }
       setTypingUsers([]);
       setRoomUsers([]);
