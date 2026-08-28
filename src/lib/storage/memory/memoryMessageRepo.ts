@@ -32,4 +32,34 @@ export class MemoryMessageRepository implements MessageRepository {
   async getMessages(roomId: string): Promise<Message[]> {
     return roomMessages.get(roomId) || [];
   }
+
+  async toggleReaction(roomId: string, messageId: string, emoji: string, username: string): Promise<Record<string, string[]> | null> {
+    const messages = roomMessages.get(roomId);
+    if (!messages) return null;
+
+    const message = messages.find(m => m.id === messageId);
+    if (!message) return null;
+
+    if (!message.reactions) {
+      message.reactions = {};
+    }
+
+    const users = message.reactions[emoji] || [];
+    const userIndex = users.indexOf(username);
+
+    if (userIndex === -1) {
+      // Add reaction
+      message.reactions[emoji] = [...users, username];
+    } else {
+      // Remove reaction
+      users.splice(userIndex, 1);
+      if (users.length === 0) {
+        delete message.reactions[emoji];
+      } else {
+        message.reactions[emoji] = [...users];
+      }
+    }
+
+    return message.reactions;
+  }
 }

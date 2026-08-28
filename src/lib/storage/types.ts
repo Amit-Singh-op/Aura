@@ -40,6 +40,7 @@ export interface Message {
     content: string;
     type?: 'text' | 'sticker' | 'power';
   };
+  reactions?: Record<string, string[]>; // Map of emoji -> array of usernames (or userIds, let's use usernames for UI simplicity, but I'll use usernames since UI uses usernames heavily, actually userIds is safer. Let's use usernames to easily show who reacted)
 }
 
 export interface Notification {
@@ -79,6 +80,7 @@ export interface RoomRepository {
 export interface MessageRepository {
   addMessage(message: Omit<Message, 'id' | 'timestamp'>): Promise<Message>;
   getMessages(roomId: string): Promise<Message[]>;
+  toggleReaction(roomId: string, messageId: string, emoji: string, username: string): Promise<Record<string, string[]> | null>;
 }
 
 export interface NotificationRepository {

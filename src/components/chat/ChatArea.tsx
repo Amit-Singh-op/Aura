@@ -3,8 +3,9 @@ import { useEffect, useState, useRef } from 'react';
 import { Socket } from 'socket.io-client';
 import { useChatStore } from '@/store/chatStore';
 import { Button } from '@/components/ui/button';
-import { Send, MessageSquareDashed, SmilePlus, Download, X, Sparkles, ChevronLeft } from 'lucide-react';
+import { Send, MessageSquareDashed, SmilePlus, Download, X, Sparkles, ChevronLeft, Smile } from 'lucide-react';
 import { Message, Sticker } from '@/lib/storage/types';
+import EmojiPicker, { Theme } from 'emoji-picker-react';
 import { MediaPicker } from './MediaPicker';
 import { PowerShower } from './PowerShower';
 import { SwipeToReply } from './SwipeToReply';
@@ -19,8 +20,9 @@ export function ChatArea({ socket }: { socket: Socket | null }) {
   const [showMediaPicker, setShowMediaPicker] = useState(false);
   const [replyingTo, setReplyingTo] = useState<Message | null>(null);
   
-  // Power Message States
+  const [isPowerMessage, setIsPowerMessage] = useState(false);
   const [powerAnimations, setPowerAnimations] = useState<{id: string, text: string, textColor: string, bgColor: string}[]>([]);
+  const [showReactionPickerFor, setShowReactionPickerFor] = useState<string | null>(null);
   const [powerTextColor, setPowerTextColor] = useState('#ffffff');
   const [powerBgColor, setPowerBgColor] = useState('transparent');
 
@@ -137,6 +139,10 @@ export function ChatArea({ socket }: { socket: Socket | null }) {
           });
         }
       });
+
+      socket.on('message_reaction_updated', (data: { messageId: string; roomId: string; reactions: Record<string, string[]> }) => {
+        useChatStore.getState().updateMessageReactions(data.roomId, data.messageId, data.reactions);
+      });
     }
 
     return () => {
@@ -150,6 +156,7 @@ export function ChatArea({ socket }: { socket: Socket | null }) {
         socket.off('user_typing');
         socket.off('presence_update');
         socket.off('app_error');
+        socket.off('message_reaction_updated');
       }
       setTypingUsers([]);
       setRoomUsers([]);
@@ -252,11 +259,24 @@ export function ChatArea({ socket }: { socket: Socket | null }) {
       await fetch('/api/users/me/stickers', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ stickerId }),
+        body: JSON.stringify({ stickerId })
       });
-    } catch (e) {
-      console.error(e);
+      // Could show a toast here
+    } catch (err) {
+      console.error('Failed to save sticker:', err);
     }
+  };
+
+  const handleToggleReaction = (messageId: string, emoji: string) => {
+    if (!socket || !currentUser || !activeRoomId) return;
+    socket.emit('toggle_reaction', {
+      roomId: activeRoomId,
+      messageId,
+      emoji,
+      userId: currentUser.id,
+      username: currentUser.username
+    });
+    setShowReactionPickerFor(null);
   };
 
   if (!activeRoomId || !activeRoom) {
@@ -399,7 +419,7 @@ export function ChatArea({ socket }: { socket: Socket | null }) {
                 )}
                 
                 <div className={`flex flex-col ${isOwn ? 'items-end' : 'items-start'} max-w-[85vw] sm:max-w-[75%]`}>
-                  <div className={`flex items-center gap-2 ${isOwn ? 'flex-row-reverse' : 'flex-row'}`}>
+                  <div className={`flex items-center gap-2 relative ${isOwn ? 'flex-row-reverse' : 'flex-row'}`}>
                     <SwipeToReply onReply={() => {
                       setReplyingTo(item.msg);
                       setTimeout(() => inputRef.current?.focus(), 0);
@@ -501,8 +521,31 @@ export function ChatArea({ socket }: { socket: Socket | null }) {
                       </div>
                     </SwipeToReply>
                   
+                  {/* Reaction Badges */}
+                  {item.msg.reactions && Object.keys(item.msg.reactions).length > 0 && (
+                    <div className={`flex flex-wrap gap-1 mt-1 ${isOwn ? 'justify-end' : 'justify-start'} w-full relative z-10`}>
+                      {Object.entries(item.msg.reactions).map(([emoji, users]) => (
+                        <button
+                          key={emoji}
+                          onClick={() => handleToggleReaction(item.msg.id, emoji)}
+                          className={`
+                            flex items-center gap-1 px-1.5 py-0.5 rounded-full text-xs font-medium border transition-transform hover:scale-105 active:scale-95
+                            ${users.includes(currentUser?.username || '') 
+                              ? 'bg-indigo-100/80 dark:bg-indigo-900/40 border-indigo-300 dark:border-indigo-700/50 text-indigo-700 dark:text-indigo-300' 
+                              : 'bg-white/80 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700/50 text-slate-600 dark:text-slate-400'}
+                            backdrop-blur-sm shadow-sm
+                          `}
+                          title={users.join(', ')}
+                        >
+                          <span>{emoji}</span>
+                          <span className="opacity-80 font-bold">{users.length}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
                   {/* Action Buttons */}
-                  <div className="flex gap-1.5 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all self-center shrink-0">
+                  <div className="flex gap-1.5 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all self-center shrink-0 absolute top-1/2 -translate-y-1/2 z-50" style={{ [isOwn ? 'right' : 'left']: 'calc(100% + 10px)' }}>
                     {!isOwn && item.msg.type === 'sticker' && item.msg.stickerId && (
                       <button 
                         onClick={() => handleSaveSticker(item.msg.stickerId!)}
@@ -522,6 +565,28 @@ export function ChatArea({ socket }: { socket: Socket | null }) {
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/></svg>
                     </button>
+                    <div className="relative">
+                      <button 
+                        onClick={() => setShowReactionPickerFor(showReactionPickerFor === item.msg.id ? null : item.msg.id)}
+                        className="p-2 rounded-full bg-white/90 dark:bg-slate-800/90 backdrop-blur-md shadow-md border border-slate-200/50 dark:border-slate-700/50 text-slate-500 hover:text-indigo-600 transition-transform hover:scale-110 z-50"
+                        title="React"
+                      >
+                        <Smile className="w-4 h-4" />
+                      </button>
+                      {showReactionPickerFor === item.msg.id && (
+                        <div className={`absolute top-full mt-2 z-[100] ${isOwn ? 'right-0' : 'left-0'}`}>
+                          <div className="fixed inset-0 z-[-1]" onClick={(e) => { e.stopPropagation(); setShowReactionPickerFor(null); }}></div>
+                          <EmojiPicker 
+                            onEmojiClick={(emojiData) => handleToggleReaction(item.msg.id, emojiData.emoji)}
+                            theme={document.documentElement.classList.contains('dark') ? Theme.DARK : Theme.LIGHT}
+                            lazyLoadEmojis={true}
+                            width={280}
+                            height={350}
+                            previewConfig={{ showPreview: false }}
+                          />
+                        </div>
+                      )}
+                    </div>
                   </div>
 
                 </div>

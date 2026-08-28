@@ -17,6 +17,7 @@ interface ChatState {
   setNotifications: (notifications: Notification[]) => void;
   addNotification: (notification: Notification) => void;
   markNotificationAsRead: (id: string) => void;
+  updateMessageReactions: (roomId: string, messageId: string, reactions: Record<string, string[]>) => void;
 }
 
 export const useChatStore = create<ChatState>((set) => ({
@@ -50,4 +51,10 @@ export const useChatStore = create<ChatState>((set) => ({
   markNotificationAsRead: (id) => set((state) => ({
     notifications: state.notifications.map(n => n.id === id ? { ...n, read: true } : n)
   })),
+  updateMessageReactions: (roomId, messageId, reactions) => set((state) => {
+    if (state.activeRoomId !== roomId) return state;
+    return {
+      messages: state.messages.map(m => m.id === messageId ? { ...m, reactions } : m)
+    };
+  }),
 }));

@@ -251,6 +251,29 @@ app.prepare().then(() => {
       }
     });
 
+    socket.on('toggle_reaction', async (data: { roomId: string; messageId: string; emoji: string; userId: string; username: string }) => {
+      try {
+        const { roomId, messageId, emoji, userId, username } = data;
+        
+        // Validate room and user
+        const room = await storage.rooms.getRoom(roomId);
+        if (!room) return;
+        const user = await storage.users.findUserByUsername(username);
+        if (!user || user.id !== userId) return;
+
+        const newReactions = await storage.messages.toggleReaction(roomId, messageId, emoji, username);
+        if (newReactions !== null) {
+          io.to(roomId).emit('message_reaction_updated', {
+            messageId,
+            roomId,
+            reactions: newReactions
+          });
+        }
+      } catch (err) {
+        console.error('Failed to toggle reaction:', err);
+      }
+    });
+
     socket.on('user_typing', (data: { roomId: string; username: string; isTyping: boolean }) => {
       socket.to(data.roomId).emit('user_typing', data);
     });
