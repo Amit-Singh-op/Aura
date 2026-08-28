@@ -18,9 +18,27 @@ export function ChatLayout() {
       transports: ['websocket', 'polling']
     });
 
+    const verifySession = () => {
+      fetch('/api/auth/session')
+        .then(r => r.json())
+        .then(data => {
+          if (!data.user) {
+            useChatStore.getState().setCurrentUser(null);
+            window.location.href = '/';
+          }
+        })
+        .catch(console.error);
+    };
+
+    newSocket.on('connect', verifySession);
+    if (newSocket.connected) {
+      verifySession();
+    }
+
     setSocket(newSocket);
 
     return () => {
+      newSocket.off('connect', verifySession);
       newSocket.disconnect();
     };
   }, [currentUser]);

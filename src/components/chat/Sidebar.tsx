@@ -65,7 +65,20 @@ export function Sidebar({ socket }: { socket: Socket | null }) {
       }
     });
 
+    const handleConnect = () => {
+      // Re-fetch state in case server restarted
+      fetch('/api/rooms')
+        .then(res => res.json())
+        .then(data => {
+          if (Array.isArray(data)) setRooms(data);
+        })
+        .catch(console.error);
+    };
+
+    socket.on('connect', handleConnect);
+
     return () => {
+      socket.off('connect', handleConnect);
       socket.off('initial_presence');
       socket.off('presence_update');
       socket.off('new_notification');
