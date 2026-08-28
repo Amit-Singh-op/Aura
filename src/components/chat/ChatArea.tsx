@@ -420,7 +420,8 @@ export function ChatArea({ socket }: { socket: Socket | null }) {
                 
                 <div className={`flex flex-col ${isOwn ? 'items-end' : 'items-start'} max-w-[85vw] sm:max-w-[75%]`}>
                   <div className={`flex items-center gap-2 relative ${isOwn ? 'flex-row-reverse' : 'flex-row'}`}>
-                    <SwipeToReply onReply={() => {
+                    <div className={`flex flex-col ${isOwn ? 'items-end' : 'items-start'} max-w-full`}>
+                      <SwipeToReply onReply={() => {
                       setReplyingTo(item.msg);
                       setTimeout(() => inputRef.current?.focus(), 0);
                     }}>
@@ -543,6 +544,7 @@ export function ChatArea({ socket }: { socket: Socket | null }) {
                       ))}
                     </div>
                   )}
+                  </div>
 
                   {/* Action Buttons */}
                   <div className="flex gap-1.5 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all self-center shrink-0 absolute top-1/2 -translate-y-1/2 z-50" style={{ [isOwn ? 'right' : 'left']: 'calc(100% + 10px)' }}>
