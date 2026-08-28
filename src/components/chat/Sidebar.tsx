@@ -4,7 +4,7 @@ import { Socket } from 'socket.io-client';
 import { useChatStore } from '@/store/chatStore';
 import { Button } from '@/components/ui/button';
 import { LogOut, Plus, Trash2, Users, Bell } from 'lucide-react';
-import { Notification } from '@/lib/storage/types';
+import { Notification, Room } from '@/lib/storage/types';
 
 export function Sidebar({ socket }: { socket: Socket | null }) {
   const { currentUser, setCurrentUser, rooms, setRooms, activeRoomId, setActiveRoomId } = useChatStore();
@@ -14,7 +14,7 @@ export function Sidebar({ socket }: { socket: Socket | null }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showNotifications, setShowNotifications] = useState(false);
-  const { notifications, setNotifications, addNotification, markNotificationAsRead, removeRoom } = useChatStore();
+  const { notifications, setNotifications, addNotification, markNotificationAsRead, removeRoom, addRoom } = useChatStore();
   const unreadCount = notifications.filter(n => !n.read).length;
 
   // Presence counts from socket
@@ -57,11 +57,20 @@ export function Sidebar({ socket }: { socket: Socket | null }) {
       removeRoom(data.id);
     });
 
+    socket.on('room_added', (data: Room) => {
+      // Check if room already exists to prevent duplication
+      const currentRooms = useChatStore.getState().rooms;
+      if (!currentRooms.find(r => r.id === data.id)) {
+        addRoom(data);
+      }
+    });
+
     return () => {
       socket.off('initial_presence');
       socket.off('presence_update');
       socket.off('new_notification');
       socket.off('room_deleted');
+      socket.off('room_added');
     };
   }, [socket]);
 
@@ -80,13 +89,16 @@ export function Sidebar({ socket }: { socket: Socket | null }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: newRoomName, icon: newRoomEmoji }),
       });
-      const data = await res.json();
-      if (!res.ok) {
-        setError(data.error);
-      } else {
-        setRooms([data, ...rooms]);
-        setIsCreating(false);
-        setNewRoomName('');
+      
+      if (!res.ok) throw new Error('Failed to create room');
+      
+      const newRoom = await res.json();
+      addRoom(newRoom);
+      setActiveRoomId(newRoom.id);
+      setIsCreating(false);
+      setNewRoomName('');
+      if (socket) {
+        socket.emit('add_room', newRoom);
       }
     } catch (err) {
       setError('Failed to create room');

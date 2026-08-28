@@ -76,7 +76,7 @@ export function ChatArea({ socket }: { socket: Socket | null }) {
               clearInterval(loadInterval);
               setIsFetching(false);
             }
-          }, 35); // 35ms stagger for that satisfying cascade effect
+          }, 35);
         } else {
           setIsFetching(false);
         }
@@ -87,7 +87,14 @@ export function ChatArea({ socket }: { socket: Socket | null }) {
       });
 
     if (socket) {
-      socket.emit('join_room', { roomId: activeRoomId, userId: currentUser.id, username: currentUser.username });
+      const join = () => {
+        socket.emit('join_room', { roomId: activeRoomId, userId: currentUser.id, username: currentUser.username });
+      };
+
+      socket.on('connect', join);
+      if (socket.connected) {
+        join();
+      }
 
       socket.on('new_message', (msg: Message) => {
         if (msg.roomId === activeRoomId) {
@@ -126,6 +133,7 @@ export function ChatArea({ socket }: { socket: Socket | null }) {
       isCancelled = true;
       if (loadInterval) clearInterval(loadInterval);
       if (socket) {
+        socket.off('connect');
         socket.emit('leave_room', { roomId: activeRoomId, userId: currentUser.id, username: currentUser.username });
         socket.off('new_message');
         socket.off('system_message');

@@ -247,6 +247,10 @@ app.prepare().then(() => {
       socket.broadcast.emit('room_deleted', data);
     });
 
+    socket.on('add_room', (data: any) => {
+      socket.broadcast.emit('room_added', data);
+    });
+
     socket.on('disconnect', () => {
       const { roomId, userId, username } = socket.data;
       if (roomId && userId) {
