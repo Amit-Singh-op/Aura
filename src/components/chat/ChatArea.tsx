@@ -289,6 +289,18 @@ export function ChatArea({ socket }: { socket: Socket | null }) {
     }
   });
 
+  if (!activeRoom) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center h-full bg-white/30 dark:bg-slate-900/30 backdrop-blur-xl relative p-6 text-center">
+        <div className="w-20 h-20 bg-slate-200 dark:bg-slate-800 rounded-full flex items-center justify-center mb-4">
+          <MessageSquareDashed className="w-10 h-10 text-slate-400" />
+        </div>
+        <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100 mb-2">Room Unavailable</h2>
+        <p className="text-slate-500 max-w-sm">This room has been deleted or you no longer have access to it. Please select another room from the sidebar.</p>
+      </div>
+    );
+  }
+
   return (
     <div className="flex-1 flex flex-col h-full bg-white/30 dark:bg-slate-900/30 backdrop-blur-xl relative">
       
