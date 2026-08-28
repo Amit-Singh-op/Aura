@@ -156,6 +156,19 @@ app.prepare().then(() => {
       try {
         const { roomId, userId, username, content, type, stickerId, replyTo, powerOptions } = data;
         
+        // Validate that room and user actually exist in storage
+        const room = await storage.rooms.getRoom(roomId);
+        if (!room) {
+          socket.emit('error', { message: 'This room no longer exists.' });
+          return;
+        }
+
+        const user = await storage.users.findUserByUsername(username);
+        if (!user || user.id !== userId) {
+          socket.emit('error', { message: 'User session invalid. Please log in again.' });
+          return;
+        }
+        
         // Rate limiting logic
         const now = Date.now();
         const limitInfo = rateLimits.get(userId) || { tokens: MAX_TOKENS, lastRefill: now };
