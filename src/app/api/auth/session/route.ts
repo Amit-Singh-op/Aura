@@ -17,5 +17,11 @@ export async function GET() {
     return NextResponse.json({ user: null });
   }
 
-  return NextResponse.json({ user: session });
+  return NextResponse.json({ 
+    user: { 
+      id: user.id, 
+      username: user.username, 
+      role: user.role 
+    } 
+  });
 }
