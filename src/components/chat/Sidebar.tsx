@@ -3,7 +3,8 @@ import { useEffect, useState } from 'react';
 import { Socket } from 'socket.io-client';
 import { useChatStore } from '@/store/chatStore';
 import { Button } from '@/components/ui/button';
-import { LogOut, Plus, Trash2, Users } from 'lucide-react';
+import { LogOut, Plus, Trash2, Users, Bell } from 'lucide-react';
+import { Notification } from '@/lib/storage/types';
 
 export function Sidebar({ socket }: { socket: Socket | null }) {
   const { currentUser, setCurrentUser, rooms, setRooms, activeRoomId, setActiveRoomId } = useChatStore();
@@ -12,6 +13,9 @@ export function Sidebar({ socket }: { socket: Socket | null }) {
   const [newRoomEmoji, setNewRoomEmoji] = useState('💬');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showNotifications, setShowNotifications] = useState(false);
+  const { notifications, setNotifications, addNotification, markNotificationAsRead } = useChatStore();
+  const unreadCount = notifications.filter(n => !n.read).length;
 
   // Presence counts from socket
   const [presence, setPresence] = useState<Record<string, number>>({});
@@ -23,7 +27,14 @@ export function Sidebar({ socket }: { socket: Socket | null }) {
         if (Array.isArray(data)) setRooms(data);
       })
       .catch(console.error);
-  }, [setRooms]);
+
+    fetch('/api/notifications')
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) setNotifications(data);
+      })
+      .catch(console.error);
+  }, [setRooms, setNotifications]);
 
   useEffect(() => {
     if (!socket) return;
@@ -38,9 +49,14 @@ export function Sidebar({ socket }: { socket: Socket | null }) {
       setPresence(prev => ({ ...prev, [data.roomId]: data.count }));
     });
 
+    socket.on('new_notification', (data: Notification) => {
+      addNotification(data);
+    });
+
     return () => {
       socket.off('initial_presence');
       socket.off('presence_update');
+      socket.off('new_notification');
     };
   }, [socket]);
 
@@ -116,9 +132,74 @@ export function Sidebar({ socket }: { socket: Socket | null }) {
             <span className="text-[10px] bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded uppercase font-bold tracking-wider">Admin</span>
           )}
         </div>
-        <Button variant="ghost" size="icon" onClick={handleLogout} title="Logout" className="hover:bg-slate-200/50 dark:hover:bg-slate-800/50 rounded-xl">
-          <LogOut className="w-4 h-4 text-slate-500" />
-        </Button>
+        <div className="flex items-center gap-1 relative">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={() => setShowNotifications(!showNotifications)} 
+            className="hover:bg-slate-200/50 dark:hover:bg-slate-800/50 rounded-xl relative"
+          >
+            <Bell className="w-5 h-5 text-slate-600 dark:text-slate-300" />
+            {unreadCount > 0 && (
+              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full ring-2 ring-white dark:ring-slate-900 animate-pulse"></span>
+            )}
+          </Button>
+
+          {showNotifications && (
+            <div className="absolute top-full right-0 mt-2 w-72 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl z-50 overflow-hidden">
+              <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center">
+                <span className="font-bold text-sm text-slate-800 dark:text-slate-100">Notifications</span>
+                {unreadCount > 0 && (
+                  <span className="text-xs bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300 px-2 py-0.5 rounded-full font-semibold">{unreadCount} new</span>
+                )}
+              </div>
+              <div className="max-h-[60vh] overflow-y-auto">
+                {notifications.length === 0 ? (
+                  <div className="p-6 text-center text-sm text-slate-500">No notifications yet.</div>
+                ) : (
+                  notifications.map(n => (
+                    <div 
+                      key={n.id}
+                      onClick={async () => {
+                        setShowNotifications(false);
+                        setActiveRoomId(n.roomId);
+                        if (!n.read) {
+                          markNotificationAsRead(n.id);
+                          try { await fetch(`/api/notifications/${n.id}`, { method: 'PATCH' }); } catch(e){}
+                        }
+                        setTimeout(() => {
+                          const el = document.getElementById(`msg-bubble-${n.messageId}`);
+                          if (el) {
+                            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            el.classList.add('ring-4', 'ring-indigo-500', 'shadow-2xl');
+                            setTimeout(() => el.classList.remove('ring-4', 'ring-indigo-500', 'shadow-2xl'), 2000);
+                          }
+                        }, 500);
+                      }}
+                      className={`p-4 border-b border-slate-100 dark:border-slate-800/50 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors ${!n.read ? 'bg-indigo-50/30 dark:bg-indigo-900/10' : ''}`}
+                    >
+                      <div className="flex gap-3">
+                        <div className="flex-1">
+                          <p className="text-sm text-slate-800 dark:text-slate-200 leading-snug mb-1">
+                            <span className="font-bold text-indigo-600 dark:text-indigo-400">@{n.fromUsername}</span> mentioned you in a message.
+                          </p>
+                          <p className="text-xs text-slate-500 dark:text-slate-400 italic line-clamp-1 border-l-2 border-slate-200 dark:border-slate-700 pl-2">
+                            {n.content}
+                          </p>
+                        </div>
+                        {!n.read && <div className="w-2 h-2 rounded-full bg-indigo-500 mt-1.5 shrink-0"></div>}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
+          
+          <Button variant="ghost" size="icon" onClick={handleLogout} title="Logout" className="hover:bg-slate-200/50 dark:hover:bg-slate-800/50 rounded-xl">
+            <LogOut className="w-4 h-4 text-slate-500" />
+          </Button>
+        </div>
       </div>
 
       {/* Rooms List */}

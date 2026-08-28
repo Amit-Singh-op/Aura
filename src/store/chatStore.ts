@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { Room, Message, User } from '@/lib/storage/types';
+import { Room, Message, User, Notification } from '@/lib/storage/types';
 
 interface ChatState {
   currentUser: User | null;
@@ -13,6 +13,10 @@ interface ChatState {
   setActiveRoomId: (id: string | null) => void;
   addRoom: (room: Room) => void;
   removeRoom: (id: string) => void;
+  notifications: Notification[];
+  setNotifications: (notifications: Notification[]) => void;
+  addNotification: (notification: Notification) => void;
+  markNotificationAsRead: (id: string) => void;
 }
 
 export const useChatStore = create<ChatState>((set) => ({
@@ -20,6 +24,7 @@ export const useChatStore = create<ChatState>((set) => ({
   rooms: [],
   messages: [],
   activeRoomId: null,
+  notifications: [],
   setCurrentUser: (user) => set({ currentUser: user }),
   setRooms: (rooms) => set({ rooms }),
   setMessages: (messages) => set({ messages }),
@@ -35,5 +40,14 @@ export const useChatStore = create<ChatState>((set) => ({
   removeRoom: (id) => set((state) => ({
     rooms: state.rooms.filter((r) => r.id !== id),
     activeRoomId: state.activeRoomId === id ? null : state.activeRoomId,
+  })),
+  setNotifications: (notifications) => set({ notifications }),
+  addNotification: (notification) => set((state) => {
+    // Only add if we don't already have it
+    if (state.notifications.some(n => n.id === notification.id)) return state;
+    return { notifications: [notification, ...state.notifications] };
+  }),
+  markNotificationAsRead: (id) => set((state) => ({
+    notifications: state.notifications.map(n => n.id === id ? { ...n, read: true } : n)
   })),
 }));

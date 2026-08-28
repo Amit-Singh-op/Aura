@@ -42,6 +42,17 @@ export interface Message {
   };
 }
 
+export interface Notification {
+  id: string;
+  userId: string;
+  fromUsername: string;
+  roomId: string;
+  messageId: string;
+  content: string;
+  read: boolean;
+  timestamp: number;
+}
+
 export interface UserRepository {
   createUser(user: Omit<User, 'id' | 'savedStickers'>): Promise<User>;
   findUserByUsername(username: string): Promise<User | null>;
@@ -69,9 +80,17 @@ export interface MessageRepository {
   getMessages(roomId: string): Promise<Message[]>;
 }
 
+export interface NotificationRepository {
+  createNotification(notification: Omit<Notification, 'id' | 'timestamp' | 'read'>): Promise<Notification>;
+  getUserNotifications(userId: string): Promise<Notification[]>;
+  markAsRead(id: string, userId: string): Promise<void>;
+  markAllAsRead(userId: string): Promise<void>;
+}
+
 export interface StorageBackend {
   users: UserRepository;
   rooms: RoomRepository;
   messages: MessageRepository;
   stickers: StickerRepository;
+  notifications: NotificationRepository;
 }

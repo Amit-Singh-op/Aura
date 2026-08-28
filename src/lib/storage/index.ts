@@ -3,6 +3,7 @@ import { MemoryUserRepository } from './memory/memoryUserRepo';
 import { MemoryRoomRepository } from './memory/memoryRoomRepo';
 import { MemoryMessageRepository } from './memory/memoryMessageRepo';
 import { MemoryStickerRepository } from './memory/memoryStickerRepo';
+import { MemoryNotificationRepository } from './memory/memoryNotificationRepo';
 
 // Define the global type for our storage to survive HMR in development
 declare global {
@@ -31,6 +32,7 @@ if (process.env.USE_DB === 'true') {
       rooms: new MemoryRoomRepository(),
       messages: new MemoryMessageRepository(),
       stickers: new MemoryStickerRepository(),
+      notifications: new MemoryNotificationRepository(),
     };
 
     // Initialize default admin and general room

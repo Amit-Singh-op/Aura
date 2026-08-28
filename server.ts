@@ -72,6 +72,8 @@ app.prepare().then(() => {
     socket.on('join_room', (data: { roomId: string; userId: string; username: string }) => {
       const { roomId, userId, username } = data;
       socket.join(roomId);
+      // Join a personal room for private notifications
+      socket.join(`user:${userId}`);
       
       // Track presence
       if (!roomUsers.has(roomId)) {
@@ -188,6 +190,32 @@ app.prepare().then(() => {
 
         // Broadcast to everyone in the room
         io.to(roomId).emit('new_message', message);
+
+        // Handle Mentions
+        if (type === 'text' && content) {
+          const mentions = content.match(/@(\w+)/g);
+          if (mentions) {
+            // Deduplicate usernames
+            const usernames = Array.from(new Set(mentions.map(m => m.substring(1))));
+            for (const mentionedUsername of usernames) {
+              if (mentionedUsername === username) continue; // Don't notify self
+              
+              const mentionedUser = await storage.users.findUserByUsername(mentionedUsername);
+              if (mentionedUser) {
+                const notification = await storage.notifications.createNotification({
+                  userId: mentionedUser.id,
+                  fromUsername: username,
+                  roomId,
+                  messageId: message.id,
+                  content: content.substring(0, 50) + (content.length > 50 ? '...' : ''), // Preview
+                });
+                
+                // Emit to the user's personal room
+                io.to(`user:${mentionedUser.id}`).emit('new_notification', notification);
+              }
+            }
+          }
+        }
       } catch (err) {
         console.error('Failed to save message:', err);
       }
