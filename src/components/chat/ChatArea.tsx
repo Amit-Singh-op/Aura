@@ -83,6 +83,16 @@ export function ChatArea({ socket }: { socket: Socket | null }) {
             if (i < data.length) {
               const nextMsg = data[i];
               addMessage(nextMsg);
+              
+              if (socket && nextMsg.userId !== currentUser.id) {
+                if (!nextMsg.deliveredTo?.includes(currentUser.id)) {
+                  socket.emit('mark_delivered', { roomId: activeRoomId, messageId: nextMsg.id, userId: currentUser.id });
+                }
+                if (document.visibilityState === 'visible' && !nextMsg.seenBy?.includes(currentUser.id)) {
+                  socket.emit('mark_seen', { roomId: activeRoomId, messageId: nextMsg.id, userId: currentUser.id });
+                }
+              }
+              
               i++;
             } else {
               clearInterval(loadInterval);
@@ -588,12 +598,10 @@ export function ChatArea({ socket }: { socket: Socket | null }) {
                         </div>
                       ) : item.msg.type === 'power' ? (
                         <div 
-                          className={`relative p-3 sm:p-5 rounded-2xl cursor-pointer hover:scale-105 hover:-translate-y-1 transition-all duration-300 shadow-comic border-4 border-comic-ink overflow-hidden group/power ${item.msg.powerOptions?.bgColor === 'transparent' ? (isOwn ? 'bg-comic-yellow' : 'bg-white') : ''}`}
+                          className={`relative p-3 sm:p-5 rounded-2xl cursor-pointer hover:scale-105 hover:-translate-y-1 transition-all duration-300 shadow-comic border-4 border-comic-ink overflow-hidden group/power flex flex-col items-center justify-center text-center ${item.msg.powerOptions?.bgColor === 'transparent' ? (isOwn ? 'bg-comic-yellow' : 'bg-white') : ''}`}
                           style={{
                             backgroundColor: item.msg.powerOptions?.bgColor === 'transparent' ? undefined : item.msg.powerOptions?.bgColor,
                             color: item.msg.powerOptions?.textColor || '#fff',
-                            WebkitTextStroke: '1px #2B1B3D',
-                            textShadow: '2px 2px 0px #2B1B3D'
                           }}
                           onClick={() => {
                             setPowerAnimations(prev => [...prev, {
@@ -606,11 +614,20 @@ export function ChatArea({ socket }: { socket: Socket | null }) {
                           title="Click to replay animation!"
                         >
                           <div className="absolute inset-0 bg-white/20 opacity-0 group-hover/power:opacity-100 transition-opacity"></div>
-                          <div className="flex items-center gap-1.5 mb-1 opacity-80 mix-blend-overlay">
-                            <Sparkles className="w-3.5 h-3.5 animate-pulse" />
-                            <span className="text-[10px] font-bold uppercase tracking-widest">Power Message</span>
+                          
+                          {/* Always-visible Badge */}
+                          <div className="flex items-center gap-1.5 mb-2 bg-black/50 text-white px-2.5 py-0.5 rounded-full border border-white/20 shadow-sm backdrop-blur-sm self-start">
+                            <Sparkles className="w-3 h-3 animate-pulse text-comic-yellow" />
+                            <span className="text-[9px] font-bold uppercase tracking-widest">Power</span>
                           </div>
-                          <div className="font-black text-3xl sm:text-5xl tracking-tighter drop-shadow-[0_4px_8px_rgba(0,0,0,0.3)]">
+                          
+                          <div 
+                            className="font-black text-3xl sm:text-5xl tracking-tighter"
+                            style={{
+                              WebkitTextStroke: '1px #2B1B3D',
+                              textShadow: '3px 3px 0px #2B1B3D'
+                            }}
+                          >
                             {item.msg.content}
                           </div>
                         </div>
@@ -677,26 +694,25 @@ export function ChatArea({ socket }: { socket: Socket | null }) {
                       </button>
                       {showReactionPickerFor === item.msg.id && (
                         <>
-                          {/* Backdrop for mobile */}
-                          <div className="fixed inset-0 z-[90] bg-comic-bg/80 backdrop-blur-sm sm:bg-transparent sm:backdrop-blur-none" onClick={(e) => { e.stopPropagation(); setShowReactionPickerFor(null); }}></div>
+                          <div className="fixed inset-0 z-[90]" onClick={(e) => { e.stopPropagation(); setShowReactionPickerFor(null); }}></div>
                           
-                          {/* Picker Container */}
                           <div className={`
-                            fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 
-                            sm:absolute sm:top-full sm:left-auto sm:right-auto sm:translate-x-0 sm:translate-y-0 sm:mt-2
-                            ${isOwn ? 'sm:right-0' : 'sm:left-0'} 
-                            z-[100] bg-white border-4 border-comic-ink rounded-2xl shadow-comic overflow-hidden
-                            w-[calc(100vw-32px)] sm:w-[300px]
-                            [&_.epr-main]:border-0 [&_.epr-main]:rounded-none
+                            absolute bottom-[calc(100%+8px)] 
+                            ${isOwn ? 'right-0 origin-bottom-right' : 'left-0 origin-bottom-left'} 
+                            z-[100] bg-comic-bg border-4 border-comic-ink rounded-full shadow-comic flex items-center p-1.5 gap-1 animate-in zoom-in-75 duration-200
                           `}>
-                            <EmojiPicker 
-                              onEmojiClick={(emojiData) => handleToggleReaction(item.msg.id, emojiData.emoji)}
-                              theme={Theme.LIGHT}
-                              lazyLoadEmojis={true}
-                              width="100%"
-                              height={350}
-                              previewConfig={{ showPreview: false }}
-                            />
+                            {['❤️', '😂', '🤡', '🎉', '👍', '👎', '🔥'].map(emoji => (
+                              <button
+                                key={emoji}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleToggleReaction(item.msg.id, emoji);
+                                }}
+                                className="w-10 h-10 flex items-center justify-center text-2xl hover:bg-comic-yellow hover:shadow-comic-sm border-2 border-transparent hover:border-comic-ink rounded-full transition-all hover:scale-125 focus:outline-none"
+                              >
+                                {emoji}
+                              </button>
+                            ))}
                           </div>
                         </>
                       )}
@@ -705,18 +721,18 @@ export function ChatArea({ socket }: { socket: Socket | null }) {
 
                 </div>
                   {/* Timestamp & Status Below Bubble */}
-                  <div className={`flex items-center gap-1 mt-1 mx-2 text-[10px] font-medium text-slate-400 dark:text-slate-500 ${isOwn ? 'justify-end' : 'justify-start'}`}>
+                  <div className={`flex items-center gap-1 mt-1 mx-2 text-[11px] font-bold font-heading text-comic-ink/60 ${isOwn ? 'justify-end' : 'justify-start'}`}>
                     <span>{new Date(item.msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                     {isOwn && (
                       <span className="flex items-center ml-1">
                         {item.msg.id.startsWith('temp-') ? (
-                          <Clock className="w-3 h-3 text-slate-400" />
+                          <Clock className="w-3.5 h-3.5 text-comic-ink/40" />
                         ) : item.msg.seenBy && item.msg.seenBy.length > 0 ? (
-                          <CheckCheck className="w-3.5 h-3.5 text-blue-500" />
+                          <CheckCheck className="w-4 h-4 text-comic-pink" />
                         ) : item.msg.deliveredTo && item.msg.deliveredTo.length > 0 ? (
-                          <CheckCheck className="w-3.5 h-3.5 text-slate-400" />
+                          <CheckCheck className="w-4 h-4 text-comic-ink/50" />
                         ) : (
-                          <Check className="w-3 h-3 text-slate-400" />
+                          <Check className="w-3.5 h-3.5 text-comic-ink/50" />
                         )}
                       </span>
                     )}
