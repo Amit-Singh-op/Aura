@@ -527,7 +527,7 @@ export function ChatArea({ socket }: { socket: Socket | null }) {
                 )}
                 
                 <div className={`flex flex-col ${isOwn ? 'items-end' : 'items-start'} max-w-[85vw] sm:max-w-[75%]`}>
-                  <div className={`flex items-center gap-2 relative ${isOwn ? 'flex-row-reverse' : 'flex-row'} w-full`}>
+                  <div className={`flex items-center gap-2 relative ${isOwn ? 'flex-row-reverse' : 'flex-row'} w-fit max-w-full`}>
                       <SwipeToReply onReply={() => {
                       setReplyingTo(item.msg);
                       setTimeout(() => inputRef.current?.focus(), 0);
