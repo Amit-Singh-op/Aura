@@ -651,7 +651,7 @@ export function ChatArea({ socket }: { socket: Socket | null }) {
                       </div>
                     </SwipeToReply>
                   {/* Action Buttons */}
-                  <div className={`flex gap-1.5 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all absolute -top-4 sm:-top-5 z-50 ${isOwn ? 'right-4' : 'left-4'}`}>
+                  <div className="flex gap-1.5 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all self-center shrink-0 absolute top-1/2 -translate-y-1/2 z-50" style={{ [isOwn ? 'right' : 'left']: 'calc(100% + 10px)' }}>
                     {!isOwn && item.msg.type === 'sticker' && item.msg.stickerId && (
                       <button 
                         onClick={() => handleSaveSticker(item.msg.stickerId!)}
@@ -672,7 +672,7 @@ export function ChatArea({ socket }: { socket: Socket | null }) {
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/></svg>
                     </button>
-                    <div className="relative">
+                    <div>
                       <button 
                         onClick={() => setShowReactionPickerFor(showReactionPickerFor === item.msg.id ? null : item.msg.id)}
                         className="p-2 rounded-xl bg-comic-purple border-2 border-comic-ink text-white shadow-comic-sm hover:-translate-y-1 hover:shadow-comic transition-all z-50"
@@ -685,7 +685,8 @@ export function ChatArea({ socket }: { socket: Socket | null }) {
                           <div className="fixed inset-0 z-[90]" onClick={(e) => { e.stopPropagation(); setShowReactionPickerFor(null); }}></div>
                           
                           <div className={`
-                            fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2
+                            absolute top-[calc(100%+8px)] 
+                            ${isOwn ? 'right-0 origin-top-right' : 'left-0 origin-top-left'}
                             z-[100] bg-comic-bg border-4 border-comic-ink rounded-3xl sm:rounded-full shadow-comic-hover flex flex-wrap justify-center p-2 sm:p-3 gap-1.5 sm:gap-2 animate-in zoom-in-75 duration-200 w-[260px] sm:w-max max-w-[90vw]
                           `}>
                             {['❤️', '😂', '🤡', '🎉', '👍', '👎', '🔥'].map(emoji => (
