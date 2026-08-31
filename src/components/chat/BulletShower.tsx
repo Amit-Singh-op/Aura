@@ -47,13 +47,11 @@ export function BulletShower({ id, emoji, text, onComplete }: BulletShowerProps)
         >
           {p.direction === 1 ? (
             <>
-              <span className="text-comic-ink bg-white border-4 border-comic-ink rounded-xl px-3 py-1 shadow-comic-sm font-heading text-3xl rotate-2">{text}</span>
               <span>{emoji}</span>
             </>
           ) : (
             <>
               <span>{emoji}</span>
-              <span className="text-comic-ink bg-white border-4 border-comic-ink rounded-xl px-3 py-1 shadow-comic-sm font-heading text-3xl -rotate-2">{text}</span>
             </>
           )}
         </div>
