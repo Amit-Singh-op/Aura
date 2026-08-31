@@ -88,7 +88,10 @@ export function MediaPicker({ onEmojiSelect, onStickerSelect, onClose }: MediaPi
   };
 
   return (
-    <div className="fixed inset-x-0 bottom-0 sm:absolute sm:bottom-[calc(100%+1rem)] sm:inset-x-auto sm:left-0 w-full sm:w-[350px] bg-comic-bg border-4 border-comic-ink shadow-comic rounded-t-3xl sm:rounded-3xl overflow-hidden flex flex-col z-50">
+    <>
+      {/* Backdrop for closing */}
+      <div className="fixed inset-0 z-40" onClick={onClose}></div>
+      <div className="fixed inset-x-0 bottom-0 sm:absolute sm:bottom-[calc(100%+1rem)] sm:inset-x-auto sm:left-0 w-full sm:w-[350px] bg-comic-bg border-4 border-comic-ink shadow-comic rounded-t-3xl sm:rounded-3xl overflow-hidden flex flex-col z-50">
       
       {/* Header Tabs */}
       <div className="flex items-center justify-between p-2 border-b-4 border-comic-ink bg-comic-teal/20 z-10 relative">
@@ -215,5 +218,6 @@ export function MediaPicker({ onEmojiSelect, onStickerSelect, onClose }: MediaPi
         )}
       </div>
     </div>
+    </>
   );
 }

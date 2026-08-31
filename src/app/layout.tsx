@@ -15,7 +15,7 @@ const nunito = Nunito({
 });
 
 export const metadata: Metadata = {
-  title: "🤡 Aura",
+  title: "Aura",
   description: "A very serious app wearing a clown nose.",
 };
 

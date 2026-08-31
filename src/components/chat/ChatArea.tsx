@@ -34,6 +34,7 @@ export function ChatArea({ socket }: { socket: Socket | null }) {
   const [showReactionPickerFor, setShowReactionPickerFor] = useState<string | null>(null);
   const [powerTextColor, setPowerTextColor] = useState('#ffffff');
   const [powerBgColor, setPowerBgColor] = useState('transparent');
+  const [downloadingStickers, setDownloadingStickers] = useState<Record<string, boolean>>({});
 
   // Mention Autocomplete States
   const [allUsers, setAllUsers] = useState<{id: string, username: string}[]>([]);
@@ -338,6 +339,7 @@ export function ChatArea({ socket }: { socket: Socket | null }) {
   };
 
   const handleSaveSticker = async (stickerId: string) => {
+    setDownloadingStickers(prev => ({ ...prev, [stickerId]: true }));
     try {
       await fetch('/api/users/me/stickers', {
         method: 'POST',
@@ -347,6 +349,8 @@ export function ChatArea({ socket }: { socket: Socket | null }) {
       // Could show a toast here
     } catch (err) {
       console.error('Failed to save sticker:', err);
+    } finally {
+      setDownloadingStickers(prev => ({ ...prev, [stickerId]: false }));
     }
   };
 
@@ -457,12 +461,12 @@ export function ChatArea({ socket }: { socket: Socket | null }) {
             {roomUsers.length > 0 && (
               <div className="flex -space-x-1.5 overflow-hidden">
                 {roomUsers.slice(0, 4).map(u => (
-                  <div key={u.id} className="inline-block h-[18px] w-[18px] rounded-full ring-2 ring-white dark:ring-slate-900 bg-gradient-to-br from-indigo-500 to-purple-600 text-[9px] text-white flex items-center justify-center font-bold" title={u.name}>
+                  <div key={u.id} className="inline-block h-5 w-5 rounded-xl border-2 border-comic-ink bg-comic-purple text-[10px] text-white flex items-center justify-center font-heading font-black shadow-comic-sm" title={u.name}>
                     {u.name.charAt(0).toUpperCase()}
                   </div>
                 ))}
                 {roomUsers.length > 4 && (
-                  <div className="inline-block h-[18px] w-[18px] rounded-full ring-2 ring-white dark:ring-slate-900 bg-slate-200 dark:bg-slate-800 text-[8px] text-slate-600 dark:text-slate-300 flex items-center justify-center font-bold">
+                  <div className="inline-block h-5 w-5 rounded-xl border-2 border-comic-ink bg-comic-yellow text-[10px] text-comic-ink flex items-center justify-center font-heading font-black shadow-comic-sm">
                     +{roomUsers.length - 4}
                   </div>
                 )}
@@ -588,6 +592,8 @@ export function ChatArea({ socket }: { socket: Socket | null }) {
                           style={{
                             backgroundColor: item.msg.powerOptions?.bgColor === 'transparent' ? undefined : item.msg.powerOptions?.bgColor,
                             color: item.msg.powerOptions?.textColor || '#fff',
+                            WebkitTextStroke: '1px #2B1B3D',
+                            textShadow: '2px 2px 0px #2B1B3D'
                           }}
                           onClick={() => {
                             setPowerAnimations(prev => [...prev, {
@@ -644,10 +650,11 @@ export function ChatArea({ socket }: { socket: Socket | null }) {
                     {!isOwn && item.msg.type === 'sticker' && item.msg.stickerId && (
                       <button 
                         onClick={() => handleSaveSticker(item.msg.stickerId!)}
-                        className="p-2 rounded-xl bg-comic-yellow border-2 border-comic-ink text-comic-ink shadow-comic-sm hover:-translate-y-1 hover:shadow-comic transition-all z-50"
+                        className="p-2 rounded-xl bg-comic-yellow border-2 border-comic-ink text-comic-ink shadow-comic-sm hover:-translate-y-1 hover:shadow-comic transition-all z-50 disabled:opacity-70 disabled:hover:-translate-y-0 disabled:hover:shadow-comic-sm"
                         title="Save Sticker"
+                        disabled={downloadingStickers[item.msg.stickerId!]}
                       >
-                        <Download className="w-5 h-5 font-bold" />
+                        {downloadingStickers[item.msg.stickerId!] ? <div className="w-5 h-5 animate-spin flex items-center justify-center">🤡</div> : <Download className="w-5 h-5 font-bold" />}
                       </button>
                     )}
                     <button 
@@ -669,17 +676,29 @@ export function ChatArea({ socket }: { socket: Socket | null }) {
                         <Smile className="w-5 h-5 font-bold" />
                       </button>
                       {showReactionPickerFor === item.msg.id && (
-                        <div className={`absolute top-full mt-2 z-[100] ${isOwn ? 'right-0' : 'left-0'}`}>
-                          <div className="fixed inset-0 z-[-1]" onClick={(e) => { e.stopPropagation(); setShowReactionPickerFor(null); }}></div>
-                          <EmojiPicker 
-                            onEmojiClick={(emojiData) => handleToggleReaction(item.msg.id, emojiData.emoji)}
-                            theme={Theme.DARK}
-                            lazyLoadEmojis={true}
-                            width={280}
-                            height={350}
-                            previewConfig={{ showPreview: false }}
-                          />
-                        </div>
+                        <>
+                          {/* Backdrop for mobile */}
+                          <div className="fixed inset-0 z-[90] bg-comic-bg/80 backdrop-blur-sm sm:bg-transparent sm:backdrop-blur-none" onClick={(e) => { e.stopPropagation(); setShowReactionPickerFor(null); }}></div>
+                          
+                          {/* Picker Container */}
+                          <div className={`
+                            fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 
+                            sm:absolute sm:top-full sm:left-auto sm:right-auto sm:translate-x-0 sm:translate-y-0 sm:mt-2
+                            ${isOwn ? 'sm:right-0' : 'sm:left-0'} 
+                            z-[100] bg-white border-4 border-comic-ink rounded-2xl shadow-comic overflow-hidden
+                            w-[calc(100vw-32px)] sm:w-[300px]
+                            [&_.epr-main]:border-0 [&_.epr-main]:rounded-none
+                          `}>
+                            <EmojiPicker 
+                              onEmojiClick={(emojiData) => handleToggleReaction(item.msg.id, emojiData.emoji)}
+                              theme={Theme.LIGHT}
+                              lazyLoadEmojis={true}
+                              width="100%"
+                              height={350}
+                              previewConfig={{ showPreview: false }}
+                            />
+                          </div>
+                        </>
                       )}
                     </div>
                   </div>
@@ -809,7 +828,10 @@ export function ChatArea({ socket }: { socket: Socket | null }) {
 
           {/* Mention Autocomplete Popup */}
           {mentionQuery !== null && filteredMentionUsers.length > 0 && (
-            <div className="absolute bottom-[calc(100%+12px)] left-12 bg-white border-4 border-comic-ink rounded-2xl shadow-comic z-50 w-64 overflow-hidden">
+            <>
+              {/* Backdrop to close mention popup when clicking outside */}
+              <div className="fixed inset-0 z-40" onClick={() => setMentionQuery(null)}></div>
+              <div className="absolute bottom-[calc(100%+12px)] left-12 bg-white border-4 border-comic-ink rounded-2xl shadow-comic z-50 w-64 overflow-hidden">
               <div className="px-3 py-2 border-b-4 border-comic-ink bg-comic-teal/30 text-sm font-heading font-black text-comic-ink uppercase tracking-wider">
                 Mention someone 🎯
               </div>
@@ -831,6 +853,7 @@ export function ChatArea({ socket }: { socket: Socket | null }) {
                 ))}
               </div>
             </div>
+            </>
           )}
           
           {showMediaPicker && (
@@ -905,7 +928,7 @@ export function ChatArea({ socket }: { socket: Socket | null }) {
                 handleSend(e);
               }
             }}
-            placeholder={`Type something funny for ${activeRoom.name}...`}
+            placeholder="Type something funny..."
             className="flex-1 max-h-32 min-h-[44px] resize-none bg-transparent px-2 py-3 text-[16px] text-comic-ink font-semibold focus:outline-none placeholder:text-comic-ink/50 scrollbar-hide border-none ring-0 focus:ring-0"
             rows={1}
             disabled={isSending}
