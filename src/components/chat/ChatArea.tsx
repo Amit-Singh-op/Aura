@@ -198,7 +198,7 @@ export function ChatArea({ socket }: { socket: Socket | null }) {
     const isPowerMessage = inputValue.startsWith('>:');
     const powerText = isPowerMessage ? inputValue.slice(2).trim() : inputValue.trim();
 
-    if (isPowerMessage && powerText.length > 6) {
+    if (isPowerMessage && powerText.length > 12) {
       return; // Validation handled by UI, but double check
     }
 
@@ -697,8 +697,8 @@ export function ChatArea({ socket }: { socket: Socket | null }) {
                 <Sparkles className="w-4 h-4 animate-pulse" />
                 Power Message Mode
               </div>
-              <div className={`text-xs font-semibold ${inputValue.slice(2).trim().length > 6 ? 'text-red-500' : 'text-slate-600 dark:text-slate-300'}`}>
-                {inputValue.slice(2).trim().length > 6 ? "Max 6 length exceeded! Please shorten your message." : "This is a powerful message with animation."}
+              <div className={`text-xs font-semibold ${inputValue.slice(2).trim().length > 12 ? 'text-red-500' : 'text-slate-600 dark:text-slate-300'}`}>
+                {inputValue.slice(2).trim().length > 12 ? "Max 12 length exceeded! Please shorten your message." : "This is a powerful message with animation."}
               </div>
             </div>
             
@@ -753,7 +753,7 @@ export function ChatArea({ socket }: { socket: Socket | null }) {
                 {filteredMentionUsers.map((u, idx) => (
                   <div
                     key={u.id}
-                    onClick={() => handleMentionSelect(u.username)}
+                    onMouseDown={(e) => { e.preventDefault(); handleMentionSelect(u.username); }}
                     className={`px-4 py-2 cursor-pointer flex items-center gap-3 transition-colors ${idx === mentionIndex ? 'bg-indigo-50 dark:bg-indigo-900/30' : 'hover:bg-slate-50 dark:hover:bg-slate-800/50'}`}
                     onMouseEnter={() => setMentionIndex(idx)}
                   >
