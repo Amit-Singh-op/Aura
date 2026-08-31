@@ -527,8 +527,7 @@ export function ChatArea({ socket }: { socket: Socket | null }) {
                 )}
                 
                 <div className={`flex flex-col ${isOwn ? 'items-end' : 'items-start'} max-w-[85vw] sm:max-w-[75%]`}>
-                  <div className={`flex items-center gap-2 relative ${isOwn ? 'flex-row-reverse' : 'flex-row'}`}>
-                    <div className={`flex flex-col ${isOwn ? 'items-end' : 'items-start'} max-w-full`}>
+                  <div className={`flex items-center gap-2 relative ${isOwn ? 'flex-row-reverse' : 'flex-row'} w-full`}>
                       <SwipeToReply onReply={() => {
                       setReplyingTo(item.msg);
                       setTimeout(() => inputRef.current?.focus(), 0);
@@ -638,31 +637,7 @@ export function ChatArea({ socket }: { socket: Socket | null }) {
                       )}
                       </div>
                     </SwipeToReply>
-                  
-                  {/* Reaction Badges */}
-                  {item.msg.reactions && Object.keys(item.msg.reactions).length > 0 && (
-                    <div className={`flex flex-wrap gap-1 mt-1 ${isOwn ? 'justify-end' : 'justify-start'} w-full relative z-10`}>
-                      {Object.entries(item.msg.reactions).map(([emoji, users]) => (
-                        <button
-                          key={emoji}
-                          onClick={() => handleToggleReaction(item.msg.id, emoji)}
-                          className={`
-                            flex items-center gap-1 px-2 py-0.5 rounded-xl text-sm font-bold border-2 transition-transform hover:-translate-y-0.5 active:translate-y-0 shadow-comic-sm
-                            ${users.includes(currentUser?.username || '') 
-                              ? 'bg-comic-pink border-comic-ink text-white' 
-                              : 'bg-white border-comic-ink text-comic-ink'}
-                          `}
-                          title={users.join(', ')}
-                        >
-                          <span className="text-base">{emoji}</span>
-                          <span className="font-heading">{users.length}</span>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                  </div>
-
-                  {/* Action Buttons */}
+                                   {/* Action Buttons */}
                   <div className="flex gap-1.5 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all self-center shrink-0 absolute top-1/2 -translate-y-1/2 z-50" style={{ [isOwn ? 'right' : 'left']: 'calc(100% + 10px)' }}>
                     {!isOwn && item.msg.type === 'sticker' && item.msg.stickerId && (
                       <button 
@@ -697,8 +672,9 @@ export function ChatArea({ socket }: { socket: Socket | null }) {
                           <div className="fixed inset-0 z-[90]" onClick={(e) => { e.stopPropagation(); setShowReactionPickerFor(null); }}></div>
                           
                           <div className={`
-                            absolute bottom-[calc(100%+8px)] 
-                            ${isOwn ? 'right-0 origin-bottom-right' : 'left-0 origin-bottom-left'} 
+                            fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2
+                            sm:absolute sm:top-auto sm:translate-x-0 sm:translate-y-0 sm:bottom-[calc(100%+8px)] 
+                            ${isOwn ? 'sm:right-0 sm:origin-bottom-right' : 'sm:left-0 sm:origin-bottom-left'} 
                             z-[100] bg-comic-bg border-4 border-comic-ink rounded-full shadow-comic flex items-center p-1.5 gap-1 animate-in zoom-in-75 duration-200
                           `}>
                             {['❤️', '😂', '🤡', '🎉', '👍', '👎', '🔥'].map(emoji => (
@@ -718,8 +694,29 @@ export function ChatArea({ socket }: { socket: Socket | null }) {
                       )}
                     </div>
                   </div>
-
-                </div>
+                  </div>
+                  
+                  {/* Reaction Badges */}
+                  {item.msg.reactions && Object.keys(item.msg.reactions).length > 0 && (
+                    <div className={`flex flex-wrap gap-1 mt-1 ${isOwn ? 'justify-end' : 'justify-start'} w-full relative z-10`}>
+                      {Object.entries(item.msg.reactions).map(([emoji, users]) => (
+                        <button
+                          key={emoji}
+                          onClick={() => handleToggleReaction(item.msg.id, emoji)}
+                          className={`
+                            flex items-center gap-1 px-2 py-0.5 rounded-xl text-sm font-bold border-2 transition-transform hover:-translate-y-0.5 active:translate-y-0 shadow-comic-sm
+                            ${users.includes(currentUser?.username || '') 
+                              ? 'bg-comic-pink border-comic-ink text-white' 
+                              : 'bg-white border-comic-ink text-comic-ink'}
+                          `}
+                          title={users.join(', ')}
+                        >
+                          <span className="text-base">{emoji}</span>
+                          <span className="font-heading">{users.length}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
                   {/* Timestamp & Status Below Bubble */}
                   <div className={`flex items-center gap-1 mt-1 mx-2 text-[11px] font-bold font-heading text-comic-ink/60 ${isOwn ? 'justify-end' : 'justify-start'}`}>
                     <span>{new Date(item.msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>

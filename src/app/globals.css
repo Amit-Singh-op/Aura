@@ -53,3 +53,34 @@ body {
   scrollbar-width: thin;
   scrollbar-color: rgba(99, 102, 241, 0.3) transparent;
 }
+
+/* Custom Emoji Picker Styling to match Comic Theme */
+.custom-emoji-picker .EmojiPickerReact {
+  --epr-bg-color: #FFF6E9; /* bg-comic-bg */
+  --epr-category-label-bg-color: #FFF6E9;
+  --epr-text-color: #2B1B3D; /* comic-ink */
+  --epr-search-input-bg-color: #fff;
+  --epr-search-input-text-color: #2B1B3D;
+  --epr-search-border-color: #2B1B3D;
+  --epr-picker-border-color: transparent;
+  --epr-hover-bg-color: #FFD166; /* comic-yellow */
+  --epr-focus-bg-color: #FFD166;
+  --epr-category-icon-active-color: #EF476F; /* comic-pink */
+  border: none;
+}
+
+.custom-emoji-picker .EmojiPickerReact .epr-search {
+  border: 4px solid #2B1B3D !important;
+  border-radius: 12px;
+  box-shadow: 2px 2px 0px #2B1B3D;
+}
+
+.custom-emoji-picker .EmojiPickerReact .epr-search:focus-within {
+  box-shadow: 4px 4px 0px #2B1B3D;
+  transform: translateY(-2px);
+  transition: all 0.2s;
+}
+
+.custom-emoji-picker .EmojiPickerReact .epr-category-nav > button:focus {
+  outline: none;
+}

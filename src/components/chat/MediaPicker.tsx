@@ -128,7 +128,7 @@ export function MediaPicker({ onEmojiSelect, onStickerSelect, onClose }: MediaPi
           <div className="h-full w-full custom-emoji-picker">
             <EmojiPicker 
               onEmojiClick={(emojiData) => onEmojiSelect(emojiData.emoji)}
-              theme={Theme.DARK}
+              theme={Theme.LIGHT}
               width="100%"
               height="100%"
               searchDisabled={false}
