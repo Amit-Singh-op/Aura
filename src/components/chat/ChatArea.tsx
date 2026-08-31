@@ -630,6 +630,19 @@ export function ChatArea({ socket }: { socket: Socket | null }) {
                             {item.msg.content}
                           </div>
                         </div>
+                      ) : item.msg.type === 'bullet' && item.msg.bulletOptions ? (
+                        <div className="relative flex flex-col items-center justify-center p-2 sm:p-4 rounded-2xl bg-white/40 border-4 border-dashed border-comic-ink/30 min-w-[200px]" id={`msg-${item.msg.id}`}>
+                           <div className="text-5xl sm:text-7xl animate-bounce drop-shadow-2xl mb-2 filter saturate-150 transform hover:scale-125 transition-transform cursor-pointer">
+                             {item.msg.bulletOptions.emoji}
+                           </div>
+                           <div className="font-heading font-black text-[10px] sm:text-xs uppercase tracking-widest text-comic-ink bg-white px-3 py-1 rounded-xl border-2 border-comic-ink shadow-comic-sm text-center">
+                             <span className="text-comic-purple">{isOwn ? 'You' : item.msg.username}</span> 
+                             <span className="mx-1.5 opacity-80">
+                               {BULLET_ACTIONS.find(a => a.emoji === item.msg.bulletOptions?.emoji)?.id || 'hit'}
+                             </span> 
+                             <span className="text-comic-pink">@{item.msg.bulletOptions.targetUsername}</span>
+                           </div>
+                        </div>
                       ) : (
                         <div className="relative whitespace-pre-wrap [word-break:break-word]" id={`msg-${item.msg.id}`}>
                           {renderMessageContent(item.msg.content, isOwn)}
