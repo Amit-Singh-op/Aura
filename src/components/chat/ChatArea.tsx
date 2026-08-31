@@ -3,7 +3,7 @@ import { useEffect, useState, useRef } from 'react';
 import { Socket } from 'socket.io-client';
 import { useChatStore } from '@/store/chatStore';
 import { Button } from '@/components/ui/button';
-import { Send, MessageSquareDashed, SmilePlus, Download, X, Sparkles, ChevronLeft, Smile } from 'lucide-react';
+import { Send, MessageSquareDashed, SmilePlus, Download, X, Sparkles, ChevronLeft, Smile, Check, CheckCheck, Clock } from 'lucide-react';
 import { Message, Sticker } from '@/lib/storage/types';
 import EmojiPicker, { Theme } from 'emoji-picker-react';
 import { MediaPicker } from './MediaPicker';
@@ -11,7 +11,7 @@ import { PowerShower } from './PowerShower';
 import { SwipeToReply } from './SwipeToReply';
 
 export function ChatArea({ socket }: { socket: Socket | null }) {
-  const { activeRoomId, setActiveRoomId, rooms, currentUser, messages, setMessages, addMessage, notifications, markNotificationAsRead } = useChatStore();
+  const { activeRoomId, setActiveRoomId, rooms, currentUser, messages, setMessages, addMessage, notifications, markNotificationAsRead, replacePendingMessage, updateMessageStatus } = useChatStore();
   const [inputValue, setInputValue] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [typingUsers, setTypingUsers] = useState<string[]>([]);
@@ -100,10 +100,29 @@ export function ChatArea({ socket }: { socket: Socket | null }) {
 
       socket.on('new_message', (msg: Message) => {
         if (msg.roomId === activeRoomId) {
-          addMessage(msg);
+          if (msg.pendingId && msg.userId === currentUser.id) {
+            replacePendingMessage(msg.pendingId, msg);
+          } else {
+            addMessage(msg);
+            if (msg.userId !== currentUser.id) {
+              socket.emit('mark_delivered', { roomId: activeRoomId, messageId: msg.id, userId: currentUser.id });
+              if (document.visibilityState === 'visible') {
+                socket.emit('mark_seen', { roomId: activeRoomId, messageId: msg.id, userId: currentUser.id });
+              }
+            }
+          }
           if (msg.type === 'power' && msg.powerOptions) {
             setPowerAnimations(prev => [...prev, { id: msg.id, text: msg.content, textColor: msg.powerOptions!.textColor, bgColor: msg.powerOptions!.bgColor }]);
           }
+        }
+      });
+
+      socket.on('message_status_update', (data: { messageId: string, roomId: string, deliveredTo?: string[], seenBy?: string[] }) => {
+        if (data.roomId === activeRoomId) {
+          updateMessageStatus(data.roomId, data.messageId, {
+            deliveredTo: data.deliveredTo,
+            seenBy: data.seenBy
+          });
         }
       });
 
@@ -157,6 +176,7 @@ export function ChatArea({ socket }: { socket: Socket | null }) {
         socket.off('presence_update');
         socket.off('app_error');
         socket.off('message_reaction_updated');
+        socket.off('message_status_update');
       }
       setTypingUsers([]);
       setRoomUsers([]);
@@ -183,6 +203,22 @@ export function ChatArea({ socket }: { socket: Socket | null }) {
     }
 
     setIsSending(true);
+    
+    const pendingId = `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const tempMessage: Message = {
+      id: pendingId,
+      roomId: activeRoomId,
+      userId: currentUser.id,
+      username: currentUser.username,
+      content: powerText,
+      type: isPowerMessage ? 'power' : 'text',
+      timestamp: Date.now(),
+      powerOptions: isPowerMessage ? { textColor: powerTextColor, bgColor: powerBgColor } : undefined,
+      replyTo: replyingTo ? { id: replyingTo.id, username: replyingTo.username, content: replyingTo.content, type: replyingTo.type } : undefined
+    };
+    
+    addMessage(tempMessage);
+
     socket.emit('send_message', {
       roomId: activeRoomId,
       userId: currentUser.id,
@@ -198,7 +234,8 @@ export function ChatArea({ socket }: { socket: Socket | null }) {
         username: replyingTo.username,
         content: replyingTo.content,
         type: replyingTo.type
-      } : undefined
+      } : undefined,
+      pendingId
     });
     socket.emit('user_typing', { roomId: activeRoomId, username: currentUser.username, isTyping: false });
 
@@ -236,6 +273,20 @@ export function ChatArea({ socket }: { socket: Socket | null }) {
 
   const handleSendSticker = (sticker: Sticker) => {
     if (!socket || !currentUser || !activeRoomId) return;
+    const pendingId = `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const tempMessage: Message = {
+      id: pendingId,
+      roomId: activeRoomId,
+      userId: currentUser.id,
+      username: currentUser.username,
+      content: sticker.url,
+      type: 'sticker',
+      stickerId: sticker.id,
+      timestamp: Date.now(),
+      replyTo: replyingTo ? { id: replyingTo.id, username: replyingTo.username, content: replyingTo.content, type: replyingTo.type } : undefined
+    };
+    addMessage(tempMessage);
+
     socket.emit('send_message', {
       roomId: activeRoomId,
       userId: currentUser.id,
@@ -248,7 +299,8 @@ export function ChatArea({ socket }: { socket: Socket | null }) {
         username: replyingTo.username,
         content: replyingTo.content,
         type: replyingTo.type
-      } : undefined
+      } : undefined,
+      pendingId
     });
     setShowMediaPicker(false);
     setReplyingTo(null);
@@ -592,10 +644,23 @@ export function ChatArea({ socket }: { socket: Socket | null }) {
                   </div>
 
                 </div>
-                  {/* Timestamp Below Bubble */}
-                  <span className="text-[10px] font-medium mt-1 mx-2 text-slate-400 dark:text-slate-500">
-                    {new Date(item.msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  </span>
+                  {/* Timestamp & Status Below Bubble */}
+                  <div className={`flex items-center gap-1 mt-1 mx-2 text-[10px] font-medium text-slate-400 dark:text-slate-500 ${isOwn ? 'justify-end' : 'justify-start'}`}>
+                    <span>{new Date(item.msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                    {isOwn && (
+                      <span className="flex items-center ml-1">
+                        {item.msg.id.startsWith('temp-') ? (
+                          <Clock className="w-3 h-3 text-slate-400" />
+                        ) : item.msg.seenBy && item.msg.seenBy.length > 0 ? (
+                          <CheckCheck className="w-3.5 h-3.5 text-blue-500" />
+                        ) : item.msg.deliveredTo && item.msg.deliveredTo.length > 0 ? (
+                          <CheckCheck className="w-3.5 h-3.5 text-slate-400" />
+                        ) : (
+                          <Check className="w-3 h-3 text-slate-400" />
+                        )}
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
             );

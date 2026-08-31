@@ -62,4 +62,38 @@ export class MemoryMessageRepository implements MessageRepository {
 
     return message.reactions;
   }
+
+  async updateMessageStatus(roomId: string, messageId: string, userId: string, status: 'delivered' | 'seen'): Promise<{ deliveredTo?: string[], seenBy?: string[] } | null> {
+    const messages = roomMessages.get(roomId);
+    if (!messages) return null;
+
+    const message = messages.find(m => m.id === messageId);
+    if (!message) return null;
+    
+    // Don't mark status for own messages
+    if (message.userId === userId) return null;
+
+    if (status === 'delivered') {
+      if (!message.deliveredTo) message.deliveredTo = [];
+      if (!message.deliveredTo.includes(userId)) {
+        message.deliveredTo.push(userId);
+      }
+    } else if (status === 'seen') {
+      if (!message.seenBy) message.seenBy = [];
+      if (!message.seenBy.includes(userId)) {
+        message.seenBy.push(userId);
+      }
+      
+      // If it's seen, it's also implicitly delivered
+      if (!message.deliveredTo) message.deliveredTo = [];
+      if (!message.deliveredTo.includes(userId)) {
+        message.deliveredTo.push(userId);
+      }
+    }
+
+    return {
+      deliveredTo: message.deliveredTo,
+      seenBy: message.seenBy
+    };
+  }
 }

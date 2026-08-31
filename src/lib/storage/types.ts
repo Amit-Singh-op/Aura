@@ -34,6 +34,9 @@ export interface Message {
     bgColor: string;
   };
   timestamp: number;
+  pendingId?: string;
+  deliveredTo?: string[];
+  seenBy?: string[];
   replyTo?: {
     id: string;
     username: string;
@@ -81,6 +84,7 @@ export interface MessageRepository {
   addMessage(message: Omit<Message, 'id' | 'timestamp'>): Promise<Message>;
   getMessages(roomId: string): Promise<Message[]>;
   toggleReaction(roomId: string, messageId: string, emoji: string, username: string): Promise<Record<string, string[]> | null>;
+  updateMessageStatus(roomId: string, messageId: string, userId: string, status: 'delivered' | 'seen'): Promise<{ deliveredTo?: string[], seenBy?: string[] } | null>;
 }
 
 export interface NotificationRepository {

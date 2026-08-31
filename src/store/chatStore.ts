@@ -18,6 +18,8 @@ interface ChatState {
   addNotification: (notification: Notification) => void;
   markNotificationAsRead: (id: string) => void;
   updateMessageReactions: (roomId: string, messageId: string, reactions: Record<string, string[]>) => void;
+  replacePendingMessage: (pendingId: string, finalMessage: Message) => void;
+  updateMessageStatus: (roomId: string, messageId: string, statusUpdates: { deliveredTo?: string[], seenBy?: string[] }) => void;
 }
 
 export const useChatStore = create<ChatState>((set) => ({
@@ -55,6 +57,17 @@ export const useChatStore = create<ChatState>((set) => ({
     if (state.activeRoomId !== roomId) return state;
     return {
       messages: state.messages.map(m => m.id === messageId ? { ...m, reactions } : m)
+    };
+  }),
+  replacePendingMessage: (pendingId, finalMessage) => set((state) => {
+    return {
+      messages: state.messages.map(m => m.id === pendingId ? finalMessage : m)
+    };
+  }),
+  updateMessageStatus: (roomId, messageId, statusUpdates) => set((state) => {
+    if (state.activeRoomId !== roomId) return state;
+    return {
+      messages: state.messages.map(m => m.id === messageId ? { ...m, ...statusUpdates } : m)
     };
   }),
 }));

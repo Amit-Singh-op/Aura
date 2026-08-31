@@ -152,9 +152,9 @@ app.prepare().then(() => {
     const REFILL_RATE = 1000; // 1 token per second
     const MAX_TOKENS = 5;
 
-    socket.on('send_message', async (data: { roomId: string; userId: string; username: string; content: string; type?: 'text' | 'sticker' | 'power'; stickerId?: string; replyTo?: any; powerOptions?: { textColor: string, bgColor: string } }) => {
+    socket.on('send_message', async (data: { roomId: string; userId: string; username: string; content: string; type?: 'text' | 'sticker' | 'power'; stickerId?: string; replyTo?: any; powerOptions?: { textColor: string, bgColor: string }, pendingId?: string }) => {
       try {
-        const { roomId, userId, username, content, type, stickerId, replyTo, powerOptions } = data;
+        const { roomId, userId, username, content, type, stickerId, replyTo, powerOptions, pendingId } = data;
         
         // Validate that room and user actually exist in storage
         const room = await storage.rooms.getRoom(roomId);
@@ -198,7 +198,8 @@ app.prepare().then(() => {
           type: type || 'text',
           stickerId,
           replyTo,
-          powerOptions
+          powerOptions,
+          pendingId
         });
 
         // Broadcast to everyone in the room
@@ -271,6 +272,40 @@ app.prepare().then(() => {
         }
       } catch (err) {
         console.error('Failed to toggle reaction:', err);
+      }
+    });
+
+    socket.on('mark_delivered', async (data: { roomId: string; messageId: string; userId: string }) => {
+      try {
+        const { roomId, messageId, userId } = data;
+        const newStatus = await storage.messages.updateMessageStatus(roomId, messageId, userId, 'delivered');
+        if (newStatus !== null) {
+          io.to(roomId).emit('message_status_update', {
+            messageId,
+            roomId,
+            deliveredTo: newStatus.deliveredTo,
+            seenBy: newStatus.seenBy
+          });
+        }
+      } catch (err) {
+        console.error('Failed to mark delivered:', err);
+      }
+    });
+
+    socket.on('mark_seen', async (data: { roomId: string; messageId: string; userId: string }) => {
+      try {
+        const { roomId, messageId, userId } = data;
+        const newStatus = await storage.messages.updateMessageStatus(roomId, messageId, userId, 'seen');
+        if (newStatus !== null) {
+          io.to(roomId).emit('message_status_update', {
+            messageId,
+            roomId,
+            deliveredTo: newStatus.deliveredTo,
+            seenBy: newStatus.seenBy
+          });
+        }
+      } catch (err) {
+        console.error('Failed to mark seen:', err);
       }
     });
 
