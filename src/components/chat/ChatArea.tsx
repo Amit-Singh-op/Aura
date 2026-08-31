@@ -483,15 +483,15 @@ export function ChatArea({ socket }: { socket: Socket | null }) {
       {/* Messages */}
       <div className="flex-1 overflow-y-auto overflow-x-hidden p-6 space-y-4" ref={containerRef} onClick={() => setShowMediaPicker(false)}>
         {messages.length === 0 && !isFetching ? (
-          <div className="h-full flex flex-col items-center justify-center text-slate-400">
-            <p>No messages yet. Be the first to say hello!</p>
+          <div className="h-full flex flex-col items-center justify-center text-comic-ink font-heading">
+            <p className="text-xl font-bold bg-comic-yellow/50 px-6 py-3 rounded-2xl border-4 border-comic-ink shadow-comic -rotate-2">No messages yet. Be the first to say hello! 🎪</p>
           </div>
         ) : (
           groupedMessages.map((item) => {
             if (item.type === 'system') {
               return (
                 <div key={item.msg.id} className="flex justify-center my-6">
-                  <span className="text-xs font-semibold px-4 py-1.5 bg-white/50 dark:bg-slate-900/50 backdrop-blur-md shadow-sm border border-white/40 dark:border-slate-700/50 text-slate-600 dark:text-slate-400 rounded-full">
+                  <span className="text-sm font-bold px-4 py-1.5 bg-comic-teal/30 border-2 border-comic-ink text-comic-ink rounded-full shadow-comic-sm">
                     {item.msg.content}
                   </span>
                 </div>
@@ -547,22 +547,22 @@ export function ChatArea({ socket }: { socket: Socket | null }) {
                              }
                           }}
                           className={`
-                            mb-2 p-2 rounded-xl text-sm border-l-4 cursor-pointer transition-all hover:opacity-80
+                            mb-2 p-2 rounded-xl text-sm border-l-4 cursor-pointer transition-all hover:-translate-y-0.5 border-4 border-comic-ink
                             ${isOwn 
-                              ? 'bg-white/20 border-white/50 text-white/90' 
-                              : 'bg-slate-100/50 dark:bg-slate-700/50 border-indigo-400 dark:border-indigo-500 text-slate-600 dark:text-slate-300'}
-                            ${item.msg.type === 'sticker' ? 'bg-white/80 dark:bg-slate-800/80 backdrop-blur-md shadow-sm mb-1' : ''}
+                              ? 'bg-comic-orange/20 text-comic-ink' 
+                              : 'bg-comic-teal/20 text-comic-ink'}
+                            ${item.msg.type === 'sticker' ? 'bg-white shadow-comic-sm mb-1' : ''}
                           `}
                         >
-                          <div className={`font-bold text-xs mb-0.5 ${isOwn ? 'text-white' : 'text-indigo-600 dark:text-indigo-400'}`}>
+                          <div className="font-heading font-black text-sm mb-0.5 uppercase tracking-wider">
                             {item.msg.replyTo!.username}
                           </div>
                           {item.msg.replyTo!.type === 'sticker' ? (
-                            <div className="flex items-center gap-1 opacity-80">
-                              <Sparkles className="w-3 h-3" /> <span className="italic">Sticker</span>
+                            <div className="flex items-center gap-1 font-bold">
+                              <Sparkles className="w-4 h-4" /> <span>Sticker</span>
                             </div>
                           ) : (
-                            <div className="line-clamp-2 leading-tight whitespace-pre-wrap [word-break:break-word]">
+                            <div className="line-clamp-2 leading-tight whitespace-pre-wrap [word-break:break-word] font-bold">
                               {item.msg.replyTo!.content}
                             </div>
                           )}
@@ -584,7 +584,7 @@ export function ChatArea({ socket }: { socket: Socket | null }) {
                         </div>
                       ) : item.msg.type === 'power' ? (
                         <div 
-                          className={`relative p-3 sm:p-5 rounded-2xl cursor-pointer hover:scale-105 hover:-translate-y-1 transition-all duration-300 shadow-xl overflow-hidden group/power ${item.msg.powerOptions?.bgColor === 'transparent' ? (isOwn ? 'bg-gradient-to-r from-indigo-500/40 to-purple-500/40' : 'bg-white/40 dark:bg-slate-800/40') : ''}`}
+                          className={`relative p-3 sm:p-5 rounded-2xl cursor-pointer hover:scale-105 hover:-translate-y-1 transition-all duration-300 shadow-comic border-4 border-comic-ink overflow-hidden group/power ${item.msg.powerOptions?.bgColor === 'transparent' ? (isOwn ? 'bg-comic-yellow' : 'bg-white') : ''}`}
                           style={{
                             backgroundColor: item.msg.powerOptions?.bgColor === 'transparent' ? undefined : item.msg.powerOptions?.bgColor,
                             color: item.msg.powerOptions?.textColor || '#fff',
@@ -624,16 +624,15 @@ export function ChatArea({ socket }: { socket: Socket | null }) {
                           key={emoji}
                           onClick={() => handleToggleReaction(item.msg.id, emoji)}
                           className={`
-                            flex items-center gap-1 px-1.5 py-0.5 rounded-full text-xs font-medium border transition-transform hover:scale-105 active:scale-95
+                            flex items-center gap-1 px-2 py-0.5 rounded-xl text-sm font-bold border-2 transition-transform hover:-translate-y-0.5 active:translate-y-0 shadow-comic-sm
                             ${users.includes(currentUser?.username || '') 
-                              ? 'bg-indigo-100/80 dark:bg-indigo-900/40 border-indigo-300 dark:border-indigo-700/50 text-indigo-700 dark:text-indigo-300' 
-                              : 'bg-white/80 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700/50 text-slate-600 dark:text-slate-400'}
-                            backdrop-blur-sm shadow-sm
+                              ? 'bg-comic-pink border-comic-ink text-white' 
+                              : 'bg-white border-comic-ink text-comic-ink'}
                           `}
                           title={users.join(', ')}
                         >
-                          <span>{emoji}</span>
-                          <span className="opacity-80 font-bold">{users.length}</span>
+                          <span className="text-base">{emoji}</span>
+                          <span className="font-heading">{users.length}</span>
                         </button>
                       ))}
                     </div>
@@ -645,10 +644,10 @@ export function ChatArea({ socket }: { socket: Socket | null }) {
                     {!isOwn && item.msg.type === 'sticker' && item.msg.stickerId && (
                       <button 
                         onClick={() => handleSaveSticker(item.msg.stickerId!)}
-                        className="p-2 rounded-full bg-white/90 dark:bg-slate-800/90 backdrop-blur-md shadow-md border border-slate-200/50 dark:border-slate-700/50 text-slate-500 hover:text-indigo-600 transition-transform hover:scale-110 z-50"
+                        className="p-2 rounded-xl bg-comic-yellow border-2 border-comic-ink text-comic-ink shadow-comic-sm hover:-translate-y-1 hover:shadow-comic transition-all z-50"
                         title="Save Sticker"
                       >
-                        <Download className="w-4 h-4" />
+                        <Download className="w-5 h-5 font-bold" />
                       </button>
                     )}
                     <button 
@@ -656,25 +655,25 @@ export function ChatArea({ socket }: { socket: Socket | null }) {
                         setReplyingTo(item.msg);
                         setTimeout(() => inputRef.current?.focus(), 0);
                       }}
-                      className="p-2 rounded-full bg-white/90 dark:bg-slate-800/90 backdrop-blur-md shadow-md border border-slate-200/50 dark:border-slate-700/50 text-slate-500 hover:text-indigo-600 transition-transform hover:scale-110 z-50"
+                      className="p-2 rounded-xl bg-comic-pink border-2 border-comic-ink text-white shadow-comic-sm hover:-translate-y-1 hover:shadow-comic transition-all z-50"
                       title="Reply"
                     >
-                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/></svg>
+                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/></svg>
                     </button>
                     <div className="relative">
                       <button 
                         onClick={() => setShowReactionPickerFor(showReactionPickerFor === item.msg.id ? null : item.msg.id)}
-                        className="p-2 rounded-full bg-white/90 dark:bg-slate-800/90 backdrop-blur-md shadow-md border border-slate-200/50 dark:border-slate-700/50 text-slate-500 hover:text-indigo-600 transition-transform hover:scale-110 z-50"
+                        className="p-2 rounded-xl bg-comic-purple border-2 border-comic-ink text-white shadow-comic-sm hover:-translate-y-1 hover:shadow-comic transition-all z-50"
                         title="React"
                       >
-                        <Smile className="w-4 h-4" />
+                        <Smile className="w-5 h-5 font-bold" />
                       </button>
                       {showReactionPickerFor === item.msg.id && (
                         <div className={`absolute top-full mt-2 z-[100] ${isOwn ? 'right-0' : 'left-0'}`}>
                           <div className="fixed inset-0 z-[-1]" onClick={(e) => { e.stopPropagation(); setShowReactionPickerFor(null); }}></div>
                           <EmojiPicker 
                             onEmojiClick={(emojiData) => handleToggleReaction(item.msg.id, emojiData.emoji)}
-                            theme={document.documentElement.classList.contains('dark') ? Theme.DARK : Theme.LIGHT}
+                            theme={Theme.DARK}
                             lazyLoadEmojis={true}
                             width={280}
                             height={350}
@@ -711,15 +710,15 @@ export function ChatArea({ socket }: { socket: Socket | null }) {
         
         {/* Typing Indicator */}
         {typingUsers.length > 0 && (
-          <div className="flex items-center gap-2 mt-4 px-2 mb-2 animate-pulse transition-all">
-            <div className="flex gap-1 bg-white/50 dark:bg-slate-800/50 backdrop-blur-md px-4 py-2 rounded-2xl shadow-sm border border-white/40 dark:border-slate-700/50 items-center">
+          <div className="flex items-center gap-2 mt-4 px-2 mb-2 animate-bounce transition-all">
+            <div className="flex gap-2 bg-white px-4 py-2 rounded-2xl shadow-comic-sm border-2 border-comic-ink items-center">
               <div className="flex gap-1 items-center h-4">
-                <div className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                <div className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                <div className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                <div className="w-2 h-2 bg-comic-purple rounded-full animate-pulse" style={{ animationDelay: '0ms' }} />
+                <div className="w-2 h-2 bg-comic-pink rounded-full animate-pulse" style={{ animationDelay: '150ms' }} />
+                <div className="w-2 h-2 bg-comic-yellow rounded-full animate-pulse" style={{ animationDelay: '300ms' }} />
               </div>
-              <span className="text-xs font-medium text-slate-500 dark:text-slate-400 ml-2">
-                {typingUsers.join(', ')} {typingUsers.length === 1 ? 'is' : 'are'} typing
+              <span className="text-sm font-bold font-heading text-comic-ink ml-2">
+                {typingUsers.join(', ')} {typingUsers.length === 1 ? 'is' : 'are'} typing...
               </span>
             </div>
           </div>
@@ -733,28 +732,28 @@ export function ChatArea({ socket }: { socket: Socket | null }) {
         
         {/* Power Message Controls */}
         {inputValue.startsWith('>:') && (
-          <div className="max-w-4xl mx-auto mb-2 bg-gradient-to-r from-indigo-500/10 to-purple-500/10 backdrop-blur-xl border border-indigo-500/30 rounded-2xl p-3 flex flex-col sm:flex-row justify-between items-center shadow-sm animate-in fade-in slide-in-from-bottom-2 duration-200 gap-3">
+          <div className="max-w-4xl mx-auto mb-3 bg-comic-teal/30 border-4 border-comic-ink rounded-2xl p-3 flex flex-col sm:flex-row justify-between items-center shadow-comic-sm gap-3">
             <div className="flex-1 overflow-hidden w-full">
-              <div className="flex items-center gap-2 font-bold text-indigo-600 dark:text-indigo-400 mb-0.5">
-                <Sparkles className="w-4 h-4 animate-pulse" />
-                Power Message Mode
+              <div className="flex items-center gap-2 font-heading font-black text-comic-ink text-lg mb-0.5 uppercase tracking-wider">
+                <Sparkles className="w-5 h-5 animate-pulse text-comic-purple" />
+                Power Mode On!
               </div>
-              <div className={`text-xs font-semibold ${inputValue.slice(2).trim().length > 12 ? 'text-red-500' : 'text-slate-600 dark:text-slate-300'}`}>
-                {inputValue.slice(2).trim().length > 12 ? "Max 12 length exceeded! Please shorten your message." : "This is a powerful message with animation."}
+              <div className={`text-sm font-bold ${inputValue.slice(2).trim().length > 12 ? 'text-comic-pink bg-comic-pink/20 px-2 py-0.5 rounded-lg border-2 border-comic-ink inline-block mt-1' : 'text-comic-ink/80'}`}>
+                {inputValue.slice(2).trim().length > 12 ? "Max 12 chars! Keep it punchy!" : "This text will be HUGE!"}
               </div>
             </div>
             
-            <div className="flex gap-4 items-center bg-white/50 dark:bg-slate-900/50 p-2 rounded-xl border border-white/40 dark:border-slate-700/50 w-full sm:w-auto shrink-0 justify-center">
+            <div className="flex gap-4 items-center bg-white p-2 rounded-xl border-4 border-comic-ink w-full sm:w-auto shrink-0 justify-center shadow-comic-sm">
               <div className="flex flex-col items-center gap-1">
-                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Text</label>
-                <input type="color" value={powerTextColor} onChange={e => setPowerTextColor(e.target.value)} className="w-6 h-6 rounded cursor-pointer border-0 p-0 bg-transparent" />
+                <label className="text-xs font-bold font-heading text-comic-ink uppercase tracking-wider">Text</label>
+                <input type="color" value={powerTextColor} onChange={e => setPowerTextColor(e.target.value)} className="w-8 h-8 rounded-lg cursor-pointer border-2 border-comic-ink p-0" />
               </div>
               <div className="flex flex-col items-center gap-1">
-                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Background</label>
-                <div className="flex gap-1 items-center">
-                  <input type="color" value={powerBgColor === 'transparent' ? '#000000' : powerBgColor} onChange={e => setPowerBgColor(e.target.value)} className="w-6 h-6 rounded cursor-pointer border-0 p-0 bg-transparent opacity-80" disabled={powerBgColor === 'transparent'} />
-                  <label className="text-[10px] flex items-center gap-1 cursor-pointer font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition-colors">
-                    <input type="checkbox" checked={powerBgColor === 'transparent'} onChange={e => setPowerBgColor(e.target.checked ? 'transparent' : '#f43f5e')} className="rounded border-slate-300 text-indigo-500 focus:ring-indigo-500" />
+                <label className="text-xs font-bold font-heading text-comic-ink uppercase tracking-wider">BG</label>
+                <div className="flex gap-2 items-center">
+                  <input type="color" value={powerBgColor === 'transparent' ? '#ffffff' : powerBgColor} onChange={e => setPowerBgColor(e.target.value)} className="w-8 h-8 rounded-lg cursor-pointer border-2 border-comic-ink p-0 disabled:opacity-50" disabled={powerBgColor === 'transparent'} />
+                  <label className="text-xs flex items-center gap-1 cursor-pointer font-bold text-comic-ink">
+                    <input type="checkbox" checked={powerBgColor === 'transparent'} onChange={e => setPowerBgColor(e.target.checked ? 'transparent' : '#FFCC33')} className="rounded border-2 border-comic-ink text-comic-pink focus:ring-comic-pink w-4 h-4 cursor-pointer" />
                     None
                   </label>
                 </div>
@@ -765,20 +764,20 @@ export function ChatArea({ socket }: { socket: Socket | null }) {
 
         {/* Reply Preview Bar */}
         {replyingTo && (
-          <div className="max-w-4xl mx-auto mb-2 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-l-4 border-l-indigo-500 border border-slate-200 dark:border-slate-700/50 rounded-2xl p-3 flex justify-between items-start shadow-sm animate-in fade-in slide-in-from-bottom-2 duration-200">
+          <div className="max-w-4xl mx-auto mb-3 bg-white border-4 border-comic-ink rounded-2xl p-3 flex justify-between items-start shadow-comic-sm">
             <div className="flex-1 overflow-hidden">
-              <div className="text-xs font-bold text-indigo-600 dark:text-indigo-400 mb-0.5">
+              <div className="text-sm font-heading font-black text-comic-purple mb-0.5 uppercase tracking-wider">
                 Replying to {replyingTo.username}
               </div>
-              <div className="text-sm text-slate-600 dark:text-slate-300 truncate">
-                {replyingTo.type === 'sticker' ? 'Sticker' : replyingTo.content}
+              <div className="text-md font-bold text-comic-ink truncate border-l-4 border-comic-yellow pl-2 mt-1">
+                {replyingTo.type === 'sticker' ? 'Sticker 🎪' : replyingTo.content}
               </div>
             </div>
             <button 
               onClick={() => setReplyingTo(null)}
-              className="p-1 rounded-full hover:bg-slate-200/50 dark:hover:bg-slate-700/50 text-slate-400 transition-colors shrink-0"
+              className="p-1.5 rounded-xl border-2 border-transparent hover:border-comic-ink hover:bg-comic-pink text-comic-ink hover:text-white transition-all shrink-0"
             >
-              <X className="w-4 h-4" />
+              <X className="w-5 h-5 font-bold" />
             </button>
           </div>
         )}
@@ -810,8 +809,8 @@ export function ChatArea({ socket }: { socket: Socket | null }) {
 
           {/* Mention Autocomplete Popup */}
           {mentionQuery !== null && filteredMentionUsers.length > 0 && (
-            <div className="absolute bottom-[calc(100%+12px)] left-12 bg-white border-4 border-comic-ink rounded-2xl shadow-comic z-50 w-64 overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-200">
-              <div className="px-3 py-2 border-b-4 border-comic-ink bg-comic-teal/20 text-xs font-bold text-comic-ink">
+            <div className="absolute bottom-[calc(100%+12px)] left-12 bg-white border-4 border-comic-ink rounded-2xl shadow-comic z-50 w-64 overflow-hidden">
+              <div className="px-3 py-2 border-b-4 border-comic-ink bg-comic-teal/30 text-sm font-heading font-black text-comic-ink uppercase tracking-wider">
                 Mention someone 🎯
               </div>
               <div className="py-1">
@@ -819,13 +818,13 @@ export function ChatArea({ socket }: { socket: Socket | null }) {
                   <div
                     key={u.id}
                     onMouseDown={(e) => { e.preventDefault(); handleMentionSelect(u.username); }}
-                    className={`px-4 py-2 cursor-pointer flex items-center gap-3 transition-colors ${idx === mentionIndex ? 'bg-indigo-50 dark:bg-indigo-900/30' : 'hover:bg-slate-50 dark:hover:bg-slate-800/50'}`}
+                    className={`px-4 py-2 cursor-pointer flex items-center gap-3 transition-all border-l-4 ${idx === mentionIndex ? 'bg-comic-yellow/30 border-comic-orange' : 'border-transparent hover:bg-comic-yellow/10'}`}
                     onMouseEnter={() => setMentionIndex(idx)}
                   >
-                    <div className="w-6 h-6 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-[10px] text-white font-bold shrink-0">
+                    <div className="w-8 h-8 rounded-xl bg-comic-purple border-2 border-comic-ink flex items-center justify-center text-white font-heading font-black shrink-0 shadow-comic-sm">
                       {u.username.charAt(0).toUpperCase()}
                     </div>
-                    <span className={`text-sm font-medium ${idx === mentionIndex ? 'text-indigo-700 dark:text-indigo-300' : 'text-slate-700 dark:text-slate-300'}`}>
+                    <span className="text-base font-bold text-comic-ink">
                       {u.username}
                     </span>
                   </div>

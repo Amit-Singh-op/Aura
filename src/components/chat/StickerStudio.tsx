@@ -318,38 +318,32 @@ export function StickerStudio({ onStickerCreated, onCancel }: StickerStudioProps
 
   if (!mode) {
     const modalContent = (
-      <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm sm:p-4">
-        <div className="flex flex-col items-center justify-center w-full max-w-md h-[100dvh] sm:h-auto text-center p-6 sm:p-8 bg-white dark:bg-slate-900 border-0 sm:border border-slate-200 dark:border-slate-700/50 rounded-none sm:rounded-[2rem] shadow-2xl relative overflow-hidden">
-          {/* Animated Background Blob */}
-          <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0">
-            <div className="absolute -top-[20%] -left-[10%] w-[60%] h-[60%] bg-indigo-500/10 blur-[80px] rounded-full"></div>
-            <div className="absolute -bottom-[20%] -right-[10%] w-[60%] h-[60%] bg-purple-500/10 blur-[80px] rounded-full"></div>
+      <div className="fixed inset-0 z-[100] flex items-center justify-center bg-comic-bg/80 backdrop-blur-sm sm:p-4">
+        <div className="flex flex-col items-center justify-center w-full max-w-md h-[100dvh] sm:h-auto text-center p-6 sm:p-8 bg-white border-4 border-comic-ink rounded-none sm:rounded-3xl shadow-comic relative overflow-hidden -rotate-1 hover:rotate-0 transition-all duration-300">
+          <div className="w-20 h-20 bg-comic-teal rounded-full flex items-center justify-center text-comic-ink mb-6 border-4 border-comic-ink shadow-comic rotate-6 z-10 relative">
+            <Sparkles className="w-10 h-10 font-bold" />
           </div>
-          
-          <div className="w-20 h-20 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-[2rem] flex items-center justify-center text-white mb-6 shadow-xl shadow-indigo-500/20 z-10 relative">
-            <Sparkles className="w-10 h-10" />
-          </div>
-          <h3 className="text-2xl font-extrabold text-slate-800 dark:text-slate-100 mb-3 tracking-tight z-10 relative">Sticker Studio</h3>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mb-8 max-w-[250px] leading-relaxed z-10 relative">
+          <h3 className="text-3xl font-heading font-black text-comic-ink mb-3 tracking-tight z-10 relative -rotate-2">Sticker Studio</h3>
+          <p className="text-lg text-comic-ink/80 font-bold mb-8 max-w-[250px] leading-relaxed z-10 relative">
             How would you like to create your custom sticker?
           </p>
           
           <div className="flex flex-col gap-4 w-full z-10 relative">
-            <label className="cursor-pointer bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 rounded-full px-6 py-4 text-sm font-bold text-white shadow-lg shadow-indigo-500/20 transition-all flex items-center justify-center gap-3 hover:scale-105">
-              <ImagePlus className="w-5 h-5" />
+            <label className="cursor-pointer bg-comic-pink hover:bg-comic-pink border-4 border-comic-ink text-white shadow-comic rounded-xl px-6 py-4 text-lg font-heading font-black transition-all flex items-center justify-center gap-3 hover:-translate-y-1 hover:shadow-comic-hover uppercase tracking-wider rotate-1">
+              <ImagePlus className="w-6 h-6" />
               Upload Base Image
               <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
             </label>
             
-            <button onClick={initializeBlankCanvas} className="bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700/50 rounded-full px-6 py-4 text-sm font-bold text-indigo-600 dark:text-indigo-400 shadow-md transition-all flex items-center justify-center gap-3 hover:scale-105">
-              <PenTool className="w-5 h-5" />
+            <button onClick={initializeBlankCanvas} className="bg-comic-yellow hover:bg-comic-yellow border-4 border-comic-ink text-comic-ink shadow-comic rounded-xl px-6 py-4 text-lg font-heading font-black transition-all flex items-center justify-center gap-3 hover:-translate-y-1 hover:shadow-comic-hover uppercase tracking-wider -rotate-1">
+              <PenTool className="w-6 h-6" />
               Draw from Scratch
             </button>
           </div>
 
-          {error && <p className="text-xs text-red-500 mt-4 font-medium z-10 relative">{error}</p>}
+          {error && <p className="text-sm text-comic-pink mt-4 font-bold bg-comic-pink/20 px-4 py-2 rounded-xl border-4 border-comic-ink z-10 relative">{error}</p>}
           
-          <button onClick={onCancel} className="mt-8 text-sm font-semibold text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors z-10 relative">
+          <button onClick={onCancel} className="mt-8 text-md font-bold text-comic-ink/60 hover:text-comic-ink hover:underline decoration-4 underline-offset-4 transition-colors z-10 relative">
             Cancel & Close
           </button>
         </div>
@@ -359,55 +353,48 @@ export function StickerStudio({ onStickerCreated, onCancel }: StickerStudioProps
   }
 
   const editorContent = (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm sm:p-4">
-      <div className="flex flex-col w-full max-w-2xl bg-white dark:bg-slate-900 border-0 sm:border border-slate-200 dark:border-slate-700/50 rounded-none sm:rounded-[2rem] shadow-2xl p-4 sm:p-6 relative overflow-hidden h-[100dvh] sm:h-[90vh] sm:max-h-[900px]">
-        
-        {/* Animated Background Blob */}
-        <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0">
-          <div className="absolute -top-[10%] -left-[10%] w-[50%] h-[50%] bg-indigo-500/5 blur-[100px] rounded-full"></div>
-        </div>
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-comic-bg/80 backdrop-blur-sm sm:p-4">
+      <div className="flex flex-col w-full max-w-2xl bg-white border-4 border-comic-ink rounded-none sm:rounded-3xl shadow-comic p-4 sm:p-6 relative overflow-hidden h-[100dvh] sm:h-[90vh] sm:max-h-[900px]">
 
         <div className="flex justify-between items-center mb-4 px-2 z-10 relative">
-          <h3 className="text-xl font-extrabold text-slate-800 dark:text-slate-100 flex items-center gap-2 tracking-tight">
-            <Sparkles className="w-5 h-5 text-purple-500" /> Studio Editor
+          <h3 className="text-2xl font-heading font-black text-comic-ink flex items-center gap-2 tracking-tight">
+            <Sparkles className="w-6 h-6 text-comic-purple" /> Studio Editor
           </h3>
           
           <div className="flex items-center gap-3">
             <button 
               onClick={addTextBlock}
-              className="flex items-center gap-2 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 px-3 py-1.5 rounded-full text-sm font-bold hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors border border-indigo-200 dark:border-indigo-800"
+              className="flex items-center gap-2 bg-comic-yellow text-comic-ink border-4 border-comic-ink px-4 py-2 rounded-xl font-heading font-black text-sm shadow-comic-sm hover:-translate-y-1 hover:shadow-comic transition-all"
             >
-              <Type className="w-4 h-4" /> Add Text
+              <Type className="w-5 h-5" /> Add Text
             </button>
 
-            <div className="w-px h-5 bg-slate-200 dark:bg-slate-700 mx-1"></div>
-
-            <div className="flex items-center gap-3 bg-slate-100 dark:bg-slate-800 px-3 py-1.5 rounded-full border border-slate-200 dark:border-slate-700">
+            <div className="flex items-center gap-3 bg-white px-3 py-1.5 rounded-xl border-4 border-comic-ink shadow-comic-sm">
               <input 
                 type="color" 
                 value={brushColor} 
                 onChange={(e) => setBrushColor(e.target.value)}
-                className="w-8 h-8 rounded-full cursor-pointer border-0 p-0 bg-transparent"
+                className="w-10 h-10 rounded-full cursor-pointer border-0 p-0 bg-transparent"
                 title="Brush Color"
               />
-              <div className="w-px h-5 bg-slate-300 dark:bg-slate-600"></div>
+              <div className="w-1 h-6 bg-comic-ink/20"></div>
               <button 
                 onClick={() => { strokesRef.current = []; drawCanvas(); }}
-                className="text-slate-400 hover:text-red-500 p-1 transition-colors"
+                className="text-comic-ink hover:text-comic-pink p-1 transition-colors"
                 title="Clear Drawing"
               >
-                <Eraser className="w-5 h-5" />
+                <Eraser className="w-6 h-6" />
               </button>
             </div>
           </div>
         </div>
         
         {/* Canvas & Text Overlay Area */}
-        <div className="flex-1 flex items-center justify-center bg-slate-100 dark:bg-slate-950/50 rounded-2xl border-2 border-dashed border-slate-300 dark:border-slate-700 overflow-hidden relative mb-5 shadow-inner z-10">
+        <div className="flex-1 flex items-center justify-center bg-comic-bg/50 rounded-2xl border-4 border-dashed border-comic-ink overflow-hidden relative mb-5 shadow-inner z-10">
           
           <div 
             ref={containerRef}
-            className="relative bg-white dark:bg-black shadow-lg cursor-crosshair touch-none overflow-hidden"
+            className="relative bg-white shadow-comic cursor-crosshair touch-none overflow-hidden border-4 border-comic-ink"
             style={{ 
               aspectRatio: `${canvasSize.width} / ${canvasSize.height}`,
               height: '100%',
@@ -430,7 +417,7 @@ export function StickerStudio({ onStickerCreated, onCancel }: StickerStudioProps
             {textBlocks.map(block => (
               <div 
                 key={block.id}
-                className={`text-block absolute flex items-center gap-2 p-1.5 rounded-lg border-2 bg-black/40 backdrop-blur-md shadow-xl transition-colors ${draggingTextId === block.id ? 'border-indigo-400' : 'border-transparent hover:border-white/30'}`}
+                className={`text-block absolute flex items-center gap-2 p-2 rounded-xl border-4 bg-comic-purple text-white shadow-comic transition-colors ${draggingTextId === block.id ? 'border-comic-yellow' : 'border-comic-ink'}`}
                 style={{ 
                   left: `${(block.x / canvasSize.width) * 100}%`, 
                   top: `${(block.y / canvasSize.height) * 100}%`,
@@ -438,30 +425,30 @@ export function StickerStudio({ onStickerCreated, onCancel }: StickerStudioProps
                 }}
               >
                 <div 
-                  className="cursor-move p-1 text-white/70 hover:text-white"
+                  className="cursor-move p-1 hover:text-comic-yellow"
                   onPointerDown={(e) => { e.preventDefault(); setDraggingTextId(block.id); }}
                 >
-                  <GripHorizontal className="w-5 h-5" />
+                  <GripHorizontal className="w-6 h-6" />
                 </div>
                 <input 
                   type="text" 
                   value={block.text}
                   onChange={(e) => setTextBlocks(prev => prev.map(t => t.id === block.id ? { ...t, text: e.target.value } : t))}
-                  className="bg-transparent text-white font-black uppercase text-2xl outline-none w-[150px] text-center"
-                  style={{ textShadow: '2px 2px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000' }}
+                  className="bg-transparent text-white font-heading font-black uppercase text-3xl outline-none w-[200px] text-center placeholder:text-white/50"
+                  style={{ textShadow: '4px 4px 0 #2B1B3D, -2px -2px 0 #2B1B3D, 2px -2px 0 #2B1B3D, -2px 2px 0 #2B1B3D' }}
                 />
                 <button 
                   onClick={() => removeTextBlock(block.id)}
-                  className="p-1 text-red-400 hover:text-red-300"
+                  className="p-1 hover:text-comic-pink text-white"
                 >
-                  <Trash2 className="w-4 h-4" />
+                  <Trash2 className="w-5 h-5" />
                 </button>
               </div>
             ))}
           </div>
         </div>
 
-        {error && <p className="text-sm text-red-500 mb-3 px-2 font-medium z-10 relative">{error}</p>}
+        {error && <p className="text-sm font-bold text-comic-pink bg-comic-pink/20 border-4 border-comic-ink p-3 rounded-xl mb-3 px-2 z-10 relative">{error}</p>}
 
         {/* Actions */}
         <div className="flex gap-3 mt-auto z-10 relative">
@@ -469,7 +456,7 @@ export function StickerStudio({ onStickerCreated, onCancel }: StickerStudioProps
             type="button" 
             variant="ghost" 
             onClick={onCancel} 
-            className="flex-1 rounded-full h-12 text-sm font-semibold hover:bg-slate-100 dark:hover:bg-slate-800"
+            className="flex-1 rounded-xl h-14 text-lg font-heading font-bold text-comic-ink border-4 border-transparent hover:border-comic-ink hover:bg-comic-yellow"
             disabled={loading}
           >
             Cancel
@@ -478,9 +465,9 @@ export function StickerStudio({ onStickerCreated, onCancel }: StickerStudioProps
             type="button" 
             onClick={handleSave}
             disabled={loading} 
-            className="flex-1 rounded-full h-12 text-sm bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-bold shadow-lg shadow-indigo-500/25 transition-all"
+            className="flex-1 rounded-xl h-14 text-lg font-heading font-black bg-comic-orange text-comic-ink border-4 border-comic-ink shadow-comic transition-all hover:-translate-y-1 hover:shadow-comic-hover uppercase tracking-wider"
           >
-            {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Save Sticker'}
+            {loading ? <div className="text-2xl animate-spin">🤡</div> : 'Save Sticker 🎉'}
           </Button>
         </div>
       </div>

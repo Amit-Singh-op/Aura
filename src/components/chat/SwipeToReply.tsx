@@ -88,8 +88,8 @@ export function SwipeToReply({ onReply, children }: { onReply: () => void, child
           zIndex: 0,
         }}
       >
-        <div className="bg-indigo-100 dark:bg-indigo-900/50 rounded-full p-2 text-indigo-600 dark:text-indigo-400 shadow-sm">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/></svg>
+        <div className="bg-comic-pink rounded-xl p-2 text-white border-2 border-comic-ink shadow-comic-sm">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/></svg>
         </div>
       </div>
 

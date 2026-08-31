@@ -24,10 +24,10 @@ export function MainApp() {
 
   if (isInitializing) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
-        <div className="animate-pulse flex flex-col items-center">
-          <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
-          <p className="mt-4 text-slate-500 font-medium text-sm">Loading...</p>
+      <div className="min-h-screen flex items-center justify-center bg-comic-bg">
+        <div className="animate-bounce flex flex-col items-center">
+          <div className="text-6xl mb-4">🤡</div>
+          <p className="mt-4 text-comic-ink font-heading font-black text-xl tracking-wider uppercase">Loading Circus...</p>
         </div>
       </div>
     );
