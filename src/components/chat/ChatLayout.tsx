@@ -44,15 +44,9 @@ export function ChatLayout() {
   }, [currentUser]);
 
   return (
-    <div className="flex h-[100dvh] bg-slate-100 dark:bg-slate-950 p-0 sm:p-6 overflow-hidden relative z-0">
-      {/* Background Gradient */}
-      <div className="absolute inset-0 z-[-1] overflow-hidden pointer-events-none hidden sm:block">
-        <div className="absolute top-[-20%] right-[-10%] w-[60%] h-[60%] bg-indigo-500/10 dark:bg-indigo-600/10 blur-[120px] rounded-full"></div>
-        <div className="absolute bottom-[-20%] left-[-10%] w-[60%] h-[60%] bg-purple-500/10 dark:bg-purple-600/10 blur-[120px] rounded-full"></div>
-      </div>
-      
+    <div className="flex h-[100dvh] bg-comic-bg overflow-hidden relative z-0">
       {/* Workspace Container */}
-      <div className="flex flex-1 w-full max-w-[1600px] mx-auto bg-white/40 dark:bg-slate-900/40 backdrop-blur-3xl sm:rounded-[2.5rem] sm:shadow-2xl sm:border border-white/60 dark:border-slate-700/50 overflow-hidden">
+      <div className="flex flex-1 w-full mx-auto bg-comic-bg overflow-hidden">
         <div className={`w-full md:w-80 shrink-0 ${activeRoomId ? 'hidden md:flex' : 'flex'}`}>
           <Sidebar socket={socket} />
         </div>

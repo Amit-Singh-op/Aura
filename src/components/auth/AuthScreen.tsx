@@ -46,29 +46,23 @@ export function AuthScreen() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden bg-slate-50 dark:bg-slate-950">
-      {/* Animated Gradient Orbs */}
-      <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-[10%] -left-[10%] w-[50%] h-[50%] bg-indigo-500/20 dark:bg-indigo-600/20 blur-[100px] rounded-full animate-pulse"></div>
-        <div className="absolute -bottom-[10%] -right-[10%] w-[50%] h-[50%] bg-purple-500/20 dark:bg-purple-600/20 blur-[100px] rounded-full animate-pulse" style={{ animationDelay: '2s' }}></div>
-      </div>
-
-      <div className="relative z-10 w-full max-w-md bg-white/60 dark:bg-slate-900/60 backdrop-blur-2xl rounded-3xl sm:rounded-[2rem] shadow-2xl border border-white/40 dark:border-slate-700/50 p-6 sm:p-10 transition-all duration-500">
+    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden bg-comic-bg">
+      <div className="relative z-10 w-full max-w-md bg-white rounded-3xl shadow-comic border-4 border-comic-ink p-6 sm:p-10 transition-all duration-500 -rotate-1 hover:rotate-0">
         <div className="text-center mb-8 sm:mb-10">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 text-white mb-6 shadow-lg shadow-indigo-500/30">
-            <span className="text-3xl">💬</span>
+          <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-comic-teal border-4 border-comic-ink text-comic-ink mb-6 shadow-comic rotate-6">
+            <span className="text-4xl">🤡</span>
           </div>
-          <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
-            {isLogin ? 'Welcome back' : 'Create an account'}
+          <h1 className="text-4xl font-heading font-black text-comic-ink tracking-tight -rotate-2">
+            {isLogin ? 'Welcome Back!' : 'Join the Circus!'}
           </h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-3 font-medium">
+          <p className="text-lg text-comic-ink/80 mt-3 font-bold">
             Enter your details below to get started.
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-5">
+        <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+            <label className="block text-sm font-heading font-bold text-comic-ink mb-2 uppercase tracking-wider">
               Username
             </label>
             <Input
@@ -78,11 +72,11 @@ export function AuthScreen() {
               placeholder="Enter your username"
               required
               disabled={loading}
-              className="h-14 rounded-full bg-slate-900/50 dark:bg-slate-900/50 text-white placeholder:text-slate-400 border-white/10 focus-visible:ring-indigo-500/50 px-6 font-medium backdrop-blur-md"
+              className="h-14 rounded-xl bg-white text-comic-ink font-bold placeholder:text-comic-ink/50 border-4 border-comic-ink focus-visible:ring-4 focus-visible:ring-comic-pink px-6 shadow-[4px_4px_0px_#2B1B3D] transition-all focus-visible:-translate-y-1"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+            <label className="block text-sm font-heading font-bold text-comic-ink mb-2 uppercase tracking-wider">
               Password
             </label>
             <div className="relative">
@@ -93,34 +87,34 @@ export function AuthScreen() {
                 placeholder="Enter your password"
                 required
                 disabled={loading}
-                className="h-14 rounded-full bg-slate-900/50 dark:bg-slate-900/50 text-white placeholder:text-slate-400 border-white/10 focus-visible:ring-indigo-500/50 px-6 pr-12 font-medium backdrop-blur-md"
+                className="h-14 rounded-xl bg-white text-comic-ink font-bold placeholder:text-comic-ink/50 border-4 border-comic-ink focus-visible:ring-4 focus-visible:ring-comic-pink px-6 pr-14 shadow-[4px_4px_0px_#2B1B3D] transition-all focus-visible:-translate-y-1"
                 minLength={6}
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition-colors focus:outline-none"
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-comic-ink hover:text-comic-pink transition-colors focus:outline-none"
                 tabIndex={-1}
                 title={showPassword ? "Hide password" : "Show password"}
               >
-                {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                {showPassword ? <EyeOff className="w-6 h-6" /> : <Eye className="w-6 h-6" />}
               </button>
             </div>
             {!isLogin && password.length < 6 && (
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 flex items-center gap-1 transition-all">
-                <span className="opacity-70">ℹ</span> Password must be at least 6 characters
+              <p className="text-xs font-bold text-comic-pink mt-3 flex items-center gap-1 transition-all">
+                <span className="text-lg">🚨</span> Password must be at least 6 characters
               </p>
             )}
           </div>
 
           {error && (
-            <div className="text-sm text-red-500 bg-red-50 dark:bg-red-500/10 p-3 rounded-lg flex justify-between items-center">
+            <div className="text-sm font-bold text-comic-ink bg-comic-pink/50 border-4 border-comic-ink p-3 rounded-xl flex justify-between items-center shadow-comic-sm">
               <span>{error}</span>
               {error === 'No account found — want to create one?' && (
                 <button
                   type="button"
                   onClick={() => { setIsLogin(false); setError(''); }}
-                  className="font-medium underline decoration-red-300 underline-offset-2"
+                  className="underline decoration-comic-ink underline-offset-4 hover:text-white transition-colors"
                 >
                   Sign up
                 </button>
@@ -130,21 +124,21 @@ export function AuthScreen() {
 
           <Button
             type="submit"
-            className="w-full h-12 text-md mt-4 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white shadow-lg shadow-indigo-500/25 transition-all duration-300 rounded-xl font-semibold"
+            className="w-full h-16 text-xl mt-6 bg-comic-orange hover:bg-comic-orange text-comic-ink border-4 border-comic-ink shadow-comic transition-all duration-200 rounded-full font-heading font-black hover:-translate-y-1 hover:shadow-comic-hover uppercase tracking-wider rotate-1"
             disabled={loading}
           >
-            {loading ? 'Please wait...' : (isLogin ? 'Log in' : 'Sign up')}
+            {loading ? 'Please wait...' : (isLogin ? 'Log in 🚀' : 'Sign up 🎉')}
           </Button>
         </form>
 
-        <div className="mt-6 text-center text-sm text-slate-500">
+        <div className="mt-8 text-center text-sm font-bold text-comic-ink/70">
           {isLogin ? (
             <p>
               Don&apos;t have an account?{' '}
               <button
                 type="button"
                 onClick={() => { setIsLogin(false); setError(''); }}
-                className="text-indigo-600 dark:text-indigo-400 font-semibold hover:underline"
+                className="text-comic-pink font-black text-lg hover:underline decoration-4 underline-offset-4"
               >
                 Sign up
               </button>
@@ -155,7 +149,7 @@ export function AuthScreen() {
               <button
                 type="button"
                 onClick={() => { setIsLogin(true); setError(''); }}
-                className="text-indigo-600 dark:text-indigo-400 font-semibold hover:underline"
+                className="text-comic-teal font-black text-lg hover:underline decoration-4 underline-offset-4"
               >
                 Log in
               </button>

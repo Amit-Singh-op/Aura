@@ -18,7 +18,25 @@ const config = {
       },
     },
     extend: {
+      fontFamily: {
+        heading: ['var(--font-fredoka)', 'sans-serif'],
+        sans: ['var(--font-nunito)', 'sans-serif'],
+      },
+      boxShadow: {
+        comic: '4px 4px 0px 0px #2B1B3D',
+        'comic-hover': '6px 6px 0px 0px #2B1B3D',
+        'comic-sm': '2px 2px 0px 0px #2B1B3D',
+      },
       colors: {
+        comic: {
+          bg: '#FFF6E9',
+          ink: '#2B1B3D',
+          pink: '#FF3D7F',
+          yellow: '#FFCC33',
+          orange: '#FF6B35',
+          purple: '#6C4AB6',
+          teal: '#1FB5A3',
+        },
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",

@@ -192,6 +192,7 @@ export function ChatArea({ socket }: { socket: Socket | null }) {
       setTypingUsers([]);
       setRoomUsers([]);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeRoomId, currentUser, socket, setMessages, addMessage]);
 
   useEffect(() => {
@@ -363,10 +364,10 @@ export function ChatArea({ socket }: { socket: Socket | null }) {
 
   if (!activeRoomId || !activeRoom) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center text-slate-400 bg-white dark:bg-slate-950">
-        <MessageSquareDashed className="w-16 h-16 mb-4 opacity-50" />
-        <h2 className="text-xl font-semibold text-slate-600 dark:text-slate-300">No room selected</h2>
-        <p className="mt-2 text-sm">Choose a room from the sidebar to start chatting.</p>
+      <div className="flex-1 flex flex-col items-center justify-center text-comic-ink bg-comic-bg border-l-4 border-comic-ink">
+        <MessageSquareDashed className="w-20 h-20 mb-4 opacity-50" />
+        <h2 className="font-heading text-2xl font-black text-comic-ink">No room selected</h2>
+        <p className="mt-2 text-lg font-bold opacity-80">Choose a room from the sidebar to start chatting. 🤡</p>
       </div>
     );
   }
@@ -404,18 +405,18 @@ export function ChatArea({ socket }: { socket: Socket | null }) {
 
   if (!activeRoom) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center h-full bg-white/30 dark:bg-slate-900/30 backdrop-blur-xl relative p-6 text-center">
-        <div className="w-20 h-20 bg-slate-200 dark:bg-slate-800 rounded-full flex items-center justify-center mb-4">
-          <MessageSquareDashed className="w-10 h-10 text-slate-400" />
+      <div className="flex-1 flex flex-col items-center justify-center h-full bg-comic-bg relative p-6 text-center border-l-4 border-comic-ink">
+        <div className="w-24 h-24 bg-comic-pink border-4 border-comic-ink shadow-comic rounded-full flex items-center justify-center mb-6 -rotate-3">
+          <MessageSquareDashed className="w-12 h-12 text-white" />
         </div>
-        <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100 mb-2">Room Unavailable</h2>
-        <p className="text-slate-500 max-w-sm">This room has been deleted or you no longer have access to it. Please select another room from the sidebar.</p>
+        <h2 className="font-heading text-4xl font-black text-comic-ink mb-2">Room Unavailable</h2>
+        <p className="text-lg font-bold text-comic-ink/80 max-w-sm">This room has been deleted or you no longer have access to it.</p>
       </div>
     );
   }
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-white/30 dark:bg-slate-900/30 backdrop-blur-xl relative">
+    <div className="flex-1 flex flex-col h-full bg-comic-bg border-l-4 border-comic-ink relative overflow-hidden">
       
       {/* Power Animations Overlay */}
       {powerAnimations.map(anim => (
@@ -441,13 +442,13 @@ export function ChatArea({ socket }: { socket: Socket | null }) {
       ))}
 
       {/* Header */}
-      <div className="h-16 shrink-0 border-b border-slate-200 dark:border-slate-800 flex items-center px-4 sm:px-6 justify-between bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm z-10">
-        <div className="flex items-center gap-2 sm:gap-3">
+      <div className="h-20 shrink-0 border-b-4 border-comic-ink flex items-center px-4 sm:px-6 justify-between bg-comic-teal z-10">
+        <div className="flex items-center gap-2 sm:gap-4">
           <button 
             onClick={() => setActiveRoomId(null)}
-            className="md:hidden p-1.5 -ml-1.5 rounded-full hover:bg-slate-200/50 dark:hover:bg-slate-800/50 text-slate-500 transition-colors"
+            className="md:hidden p-2 -ml-2 rounded-full border-2 border-transparent hover:border-comic-ink hover:bg-comic-yellow/50 text-comic-ink transition-all hover:-translate-y-0.5 hover:shadow-comic-sm"
           >
-            <ChevronLeft className="w-6 h-6" />
+            <ChevronLeft className="w-8 h-8 font-bold" />
           </button>
           <span className="text-2xl drop-shadow-sm">{activeRoom.icon || '💬'}</span>
           <div>
@@ -505,7 +506,7 @@ export function ChatArea({ socket }: { socket: Socket | null }) {
               <div key={item.msg.id} className={`flex flex-col ${isOwn ? 'items-end' : 'items-start'} ${item.showHeader ? 'mt-6' : 'mt-1.5'} group`}>
                 {item.showHeader && (
                   <div className={`flex items-baseline gap-2 mb-1.5 ${isOwn ? 'flex-row-reverse' : 'flex-row'} px-1`}>
-                    <span className="text-sm font-semibold text-slate-800 dark:text-slate-200">
+                    <span className="font-heading text-sm font-bold text-comic-ink">
                       {isOwn ? 'You' : item.msg.username}
                     </span>
                   </div>
@@ -521,11 +522,11 @@ export function ChatArea({ socket }: { socket: Socket | null }) {
                       <div 
                       id={`msg-bubble-${item.msg.id}`}
                       className={`
-                        relative px-4 py-2.5 rounded-3xl break-words text-[15px] leading-relaxed shadow-sm transition-all duration-300 group/bubble
+                        relative px-4 py-2.5 rounded-3xl break-words text-[16px] font-medium leading-relaxed border-2 border-comic-ink shadow-comic transition-all duration-300 group/bubble
                         ${isOwn 
-                          ? 'bg-gradient-to-br from-indigo-500 to-purple-600 text-white rounded-tr-sm shadow-indigo-500/20' 
-                          : 'bg-white/80 dark:bg-slate-800/80 backdrop-blur-md text-slate-800 dark:text-slate-100 rounded-tl-sm border border-white/60 dark:border-slate-700/50'}
-                        ${isReplyToMe ? 'ring-2 ring-indigo-500/50 dark:ring-indigo-400/50 shadow-[0_0_15px_rgba(99,102,241,0.25)]' : ''}
+                          ? 'bg-comic-yellow text-comic-ink rounded-tr-sm' 
+                          : 'bg-white text-comic-ink rounded-tl-sm'}
+                        ${isReplyToMe ? 'ring-4 ring-comic-pink shadow-comic-hover' : ''}
                         ${item.msg.type === 'sticker' ? '!p-0 !bg-transparent !bg-none !border-none !shadow-none !ring-0' : ''}
                         ${hasReply && item.msg.type !== 'sticker' ? 'pt-2' : ''}
                       `}
@@ -576,8 +577,8 @@ export function ChatArea({ socket }: { socket: Socket | null }) {
                             alt="Sticker" 
                             className={`max-w-[200px] max-h-[200px] object-contain hover:scale-105 transition-transform duration-200 cursor-pointer ${
                               isOwn 
-                                ? 'rounded-2xl border-2 border-indigo-400/60 dark:border-indigo-500/60 shadow-[0_0_20px_rgba(99,102,241,0.3)] bg-white/20 dark:bg-slate-900/40 backdrop-blur-md p-1.5' 
-                                : 'rounded-2xl border-2 border-white/80 dark:border-slate-700/60 shadow-[0_4px_12px_rgba(0,0,0,0.1)] bg-white/40 dark:bg-slate-800/40 backdrop-blur-md p-1.5'
+                                ? 'rounded-2xl border-4 border-comic-ink shadow-comic bg-comic-yellow p-1.5' 
+                                : 'rounded-2xl border-4 border-comic-ink shadow-comic bg-white p-1.5'
                             }`} 
                           />
                         </div>
@@ -782,11 +783,11 @@ export function ChatArea({ socket }: { socket: Socket | null }) {
           </div>
         )}
 
-        <form onSubmit={handleSend} className="flex gap-2 items-end max-w-4xl mx-auto relative bg-white/60 dark:bg-slate-900/60 backdrop-blur-2xl p-2 rounded-[2rem] shadow-lg shadow-indigo-500/5 border border-white/60 dark:border-slate-700/50 transition-all focus-within:ring-2 focus-within:ring-indigo-500/20 focus-within:bg-white/80 dark:focus-within:bg-slate-900/80">
+        <form onSubmit={handleSend} className="flex gap-2 items-end max-w-4xl mx-auto relative bg-white p-2 rounded-full border-4 border-comic-ink shadow-comic transition-all focus-within:-translate-y-1 focus-within:shadow-comic-hover">
           
           {/* Action Suggestions Popup */}
           {inputValue.match(/^@(\w+)\s*$/) && (
-            <div className="absolute bottom-[calc(100%+8px)] left-1/2 -translate-x-1/2 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl z-50 animate-in fade-in slide-in-from-bottom-2 duration-200 flex p-1.5 gap-1 max-w-[95vw] w-max overflow-x-auto scrollbar-hide">
+            <div className="absolute bottom-[calc(100%+12px)] left-1/2 -translate-x-1/2 bg-white border-4 border-comic-ink rounded-2xl shadow-comic z-50 animate-in fade-in slide-in-from-bottom-2 duration-200 flex p-2 gap-2 max-w-[95vw] w-max overflow-x-auto scrollbar-hide">
               {BULLET_ACTIONS.map(action => (
                 <button
                   key={action.id}
@@ -798,9 +799,9 @@ export function ChatArea({ socket }: { socket: Socket | null }) {
                       inputRef.current?.focus();
                     }
                   }}
-                  className="px-3 py-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex items-center gap-1.5"
+                  className="px-3 py-1.5 rounded-xl border-2 border-transparent hover:border-comic-ink hover:bg-comic-yellow/30 hover:-translate-y-0.5 hover:shadow-comic-sm transition-all flex items-center gap-1.5"
                 >
-                  <span className="text-sm font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap">{action.id}</span>
+                  <span className="font-heading text-sm font-bold text-comic-ink whitespace-nowrap">{action.id}</span>
                   <span className="text-lg">{action.emoji}</span>
                 </button>
               ))}
@@ -809,9 +810,9 @@ export function ChatArea({ socket }: { socket: Socket | null }) {
 
           {/* Mention Autocomplete Popup */}
           {mentionQuery !== null && filteredMentionUsers.length > 0 && (
-            <div className="absolute bottom-[calc(100%+8px)] left-12 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl z-50 w-64 overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-200">
-              <div className="px-3 py-2 border-b border-slate-100 dark:border-slate-800/50 bg-slate-50/50 dark:bg-slate-800/20 text-xs font-semibold text-slate-500">
-                Mention someone
+            <div className="absolute bottom-[calc(100%+12px)] left-12 bg-white border-4 border-comic-ink rounded-2xl shadow-comic z-50 w-64 overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-200">
+              <div className="px-3 py-2 border-b-4 border-comic-ink bg-comic-teal/20 text-xs font-bold text-comic-ink">
+                Mention someone 🎯
               </div>
               <div className="py-1">
                 {filteredMentionUsers.map((u, idx) => (
@@ -847,7 +848,7 @@ export function ChatArea({ socket }: { socket: Socket | null }) {
           <button
             type="button"
             onClick={() => setShowMediaPicker(!showMediaPicker)}
-            className="h-[44px] w-[44px] flex items-center justify-center rounded-full hover:bg-slate-200/50 dark:hover:bg-slate-800/50 text-slate-500 transition-colors shrink-0 mb-0.5"
+            className="h-[44px] w-[44px] flex items-center justify-center rounded-full border-2 border-transparent hover:border-comic-ink hover:bg-comic-yellow/30 text-comic-ink transition-all shrink-0 mb-0.5 hover:-translate-y-0.5 hover:shadow-comic-sm"
             title="Emojis & Stickers"
           >
             <SmilePlus className="w-6 h-6" />
@@ -905,8 +906,8 @@ export function ChatArea({ socket }: { socket: Socket | null }) {
                 handleSend(e);
               }
             }}
-            placeholder={`Message ${activeRoom.name}...`}
-            className="flex-1 max-h-32 min-h-[44px] resize-none bg-transparent px-4 py-3 text-[15px] text-slate-900 dark:text-slate-50 focus:outline-none placeholder:text-slate-500 font-medium scrollbar-hide border-none ring-0 focus:ring-0"
+            placeholder={`Type something funny for ${activeRoom.name}...`}
+            className="flex-1 max-h-32 min-h-[44px] resize-none bg-transparent px-2 py-3 text-[16px] text-comic-ink font-semibold focus:outline-none placeholder:text-comic-ink/50 scrollbar-hide border-none ring-0 focus:ring-0"
             rows={1}
             disabled={isSending}
           />
@@ -914,13 +915,13 @@ export function ChatArea({ socket }: { socket: Socket | null }) {
             type="submit" 
             size="icon" 
             disabled={!inputValue.trim() || isSending}
-            className="h-[44px] w-[44px] rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 hover:scale-105 transition-all duration-200 text-white shrink-0 shadow-md shadow-indigo-500/30 disabled:opacity-50 disabled:hover:scale-100"
+            className="h-[44px] w-[44px] rounded-full bg-comic-orange border-2 border-comic-ink hover:-translate-y-1 hover:shadow-comic transition-all duration-200 text-comic-ink shrink-0 shadow-comic-sm disabled:opacity-50 disabled:hover:scale-100 disabled:hover:translate-y-0"
           >
             <Send className="w-5 h-5 ml-0.5" />
           </Button>
         </form>
-        <div className="text-center mt-3 text-xs text-slate-500 dark:text-slate-400 font-medium">
-          <kbd className="font-sans px-1.5 py-0.5 bg-black/5 dark:bg-white/10 rounded-md">Enter</kbd> to send, <kbd className="font-sans px-1.5 py-0.5 bg-black/5 dark:bg-white/10 rounded-md">Shift + Enter</kbd> for new line
+        <div className="text-center mt-3 text-xs text-comic-ink/60 font-bold">
+          <kbd className="font-heading px-1.5 py-0.5 bg-comic-ink/10 rounded-md border border-comic-ink/20">Enter</kbd> to send, <kbd className="font-heading px-1.5 py-0.5 bg-comic-ink/10 rounded-md border border-comic-ink/20">Shift + Enter</kbd> for new line
         </div>
       </div>
     </div>
