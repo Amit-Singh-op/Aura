@@ -27,8 +27,13 @@ export interface Message {
   userId: string;
   username: string;
   content: string; // text content OR sticker url
-  type?: 'text' | 'sticker' | 'power';
+  type?: 'text' | 'sticker' | 'power' | 'bullet';
   stickerId?: string;
+  bulletOptions?: {
+    targetUsername: string;
+    emoji: string;
+    text: string;
+  };
   powerOptions?: {
     textColor: string;
     bgColor: string;
@@ -41,7 +46,7 @@ export interface Message {
     id: string;
     username: string;
     content: string;
-    type?: 'text' | 'sticker' | 'power';
+    type?: 'text' | 'sticker' | 'power' | 'bullet';
   };
   reactions?: Record<string, string[]>; // Map of emoji -> array of usernames (or userIds, let's use usernames for UI simplicity, but I'll use usernames since UI uses usernames heavily, actually userIds is safer. Let's use usernames to easily show who reacted)
 }

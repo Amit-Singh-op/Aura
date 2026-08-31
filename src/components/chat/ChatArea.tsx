@@ -8,7 +8,15 @@ import { Message, Sticker } from '@/lib/storage/types';
 import EmojiPicker, { Theme } from 'emoji-picker-react';
 import { MediaPicker } from './MediaPicker';
 import { PowerShower } from './PowerShower';
+import { BulletShower } from './BulletShower';
 import { SwipeToReply } from './SwipeToReply';
+
+const BULLET_ACTIONS = [
+  { id: 'chal bhag', emoji: '🏃‍♂️💨', label: 'chal bhag' },
+  { id: 'slap', emoji: '✋💥', label: 'slap' },
+  { id: 'love', emoji: '❤️✨', label: 'love' },
+  { id: 'party', emoji: '🎉🎊', label: 'party' },
+];
 
 export function ChatArea({ socket }: { socket: Socket | null }) {
   const { activeRoomId, setActiveRoomId, rooms, currentUser, messages, setMessages, addMessage, notifications, markNotificationAsRead, replacePendingMessage, updateMessageStatus } = useChatStore();
@@ -22,6 +30,7 @@ export function ChatArea({ socket }: { socket: Socket | null }) {
   
   const [isPowerMessage, setIsPowerMessage] = useState(false);
   const [powerAnimations, setPowerAnimations] = useState<{id: string, text: string, textColor: string, bgColor: string}[]>([]);
+  const [bulletAnimations, setBulletAnimations] = useState<{id: string, emoji: string, text: string}[]>([]);
   const [showReactionPickerFor, setShowReactionPickerFor] = useState<string | null>(null);
   const [powerTextColor, setPowerTextColor] = useState('#ffffff');
   const [powerBgColor, setPowerBgColor] = useState('transparent');
@@ -113,6 +122,8 @@ export function ChatArea({ socket }: { socket: Socket | null }) {
           }
           if (msg.type === 'power' && msg.powerOptions) {
             setPowerAnimations(prev => [...prev, { id: msg.id, text: msg.content, textColor: msg.powerOptions!.textColor, bgColor: msg.powerOptions!.bgColor }]);
+          } else if (msg.type === 'bullet' && msg.bulletOptions) {
+            setBulletAnimations(prev => [...prev, { id: msg.id, emoji: msg.bulletOptions!.emoji, text: msg.bulletOptions!.text }]);
           }
         }
       });
@@ -202,6 +213,23 @@ export function ChatArea({ socket }: { socket: Socket | null }) {
       return; // Validation handled by UI, but double check
     }
 
+    const bulletActionMatch = inputValue.trim().match(/^@(\w+)\s+(.+)$/);
+    let bulletAction = null;
+    let finalType: 'text' | 'power' | 'bullet' = isPowerMessage ? 'power' : 'text';
+    let finalContent = powerText;
+
+    if (bulletActionMatch && !isPowerMessage) {
+      const username = bulletActionMatch[1];
+      const actionText = bulletActionMatch[2];
+      const foundAction = BULLET_ACTIONS.find(a => a.id.toLowerCase() === actionText.toLowerCase());
+      const isLegitUser = allUsers.some(u => u.username.toLowerCase() === username.toLowerCase());
+      if (foundAction && isLegitUser) {
+        bulletAction = { targetUsername: username, emoji: foundAction.emoji, text: `@${username}` };
+        finalType = 'bullet';
+        finalContent = foundAction.emoji; // Emoji acts as content for history
+      }
+    }
+
     setIsSending(true);
     
     const pendingId = `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
@@ -210,10 +238,11 @@ export function ChatArea({ socket }: { socket: Socket | null }) {
       roomId: activeRoomId,
       userId: currentUser.id,
       username: currentUser.username,
-      content: powerText,
-      type: isPowerMessage ? 'power' : 'text',
+      content: finalContent,
+      type: finalType,
       timestamp: Date.now(),
-      powerOptions: isPowerMessage ? { textColor: powerTextColor, bgColor: powerBgColor } : undefined,
+      powerOptions: finalType === 'power' ? { textColor: powerTextColor, bgColor: powerBgColor } : undefined,
+      bulletOptions: bulletAction || undefined,
       replyTo: replyingTo ? { id: replyingTo.id, username: replyingTo.username, content: replyingTo.content, type: replyingTo.type } : undefined
     };
     
@@ -223,12 +252,13 @@ export function ChatArea({ socket }: { socket: Socket | null }) {
       roomId: activeRoomId,
       userId: currentUser.id,
       username: currentUser.username,
-      content: powerText,
-      type: isPowerMessage ? 'power' : 'text',
-      powerOptions: isPowerMessage ? {
+      content: finalContent,
+      type: finalType,
+      powerOptions: finalType === 'power' ? {
         textColor: powerTextColor,
         bgColor: powerBgColor
       } : undefined,
+      bulletOptions: bulletAction || undefined,
       replyTo: replyingTo ? {
         id: replyingTo.id,
         username: replyingTo.username,
@@ -396,6 +426,17 @@ export function ChatArea({ socket }: { socket: Socket | null }) {
           textColor={anim.textColor}
           bgColor={anim.bgColor}
           onComplete={(id) => setPowerAnimations(prev => prev.filter(p => p.id !== id))}
+        />
+      ))}
+
+      {/* Bullet Animations Overlay */}
+      {bulletAnimations.map(anim => (
+        <BulletShower
+          key={anim.id}
+          id={anim.id}
+          emoji={anim.emoji}
+          text={anim.text}
+          onComplete={(id) => setBulletAnimations(prev => prev.filter(p => p.id !== id))}
         />
       ))}
 
@@ -743,6 +784,29 @@ export function ChatArea({ socket }: { socket: Socket | null }) {
 
         <form onSubmit={handleSend} className="flex gap-2 items-end max-w-4xl mx-auto relative bg-white/60 dark:bg-slate-900/60 backdrop-blur-2xl p-2 rounded-[2rem] shadow-lg shadow-indigo-500/5 border border-white/60 dark:border-slate-700/50 transition-all focus-within:ring-2 focus-within:ring-indigo-500/20 focus-within:bg-white/80 dark:focus-within:bg-slate-900/80">
           
+          {/* Action Suggestions Popup */}
+          {inputValue.match(/^@(\w+)\s*$/) && (
+            <div className="absolute bottom-[calc(100%+8px)] left-1/2 -translate-x-1/2 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl z-50 animate-in fade-in slide-in-from-bottom-2 duration-200 flex p-1.5 gap-1 max-w-[95vw] w-max overflow-x-auto scrollbar-hide">
+              {BULLET_ACTIONS.map(action => (
+                <button
+                  key={action.id}
+                  type="button"
+                  onClick={() => {
+                    const match = inputValue.match(/^@(\w+)\s*$/);
+                    if (match) {
+                      setInputValue(`@${match[1]} ${action.id}`);
+                      inputRef.current?.focus();
+                    }
+                  }}
+                  className="px-3 py-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex items-center gap-1.5"
+                >
+                  <span className="text-sm font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap">{action.id}</span>
+                  <span className="text-lg">{action.emoji}</span>
+                </button>
+              ))}
+            </div>
+          )}
+
           {/* Mention Autocomplete Popup */}
           {mentionQuery !== null && filteredMentionUsers.length > 0 && (
             <div className="absolute bottom-[calc(100%+8px)] left-12 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl z-50 w-64 overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-200">

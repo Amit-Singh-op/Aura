@@ -152,9 +152,9 @@ app.prepare().then(() => {
     const REFILL_RATE = 1000; // 1 token per second
     const MAX_TOKENS = 5;
 
-    socket.on('send_message', async (data: { roomId: string; userId: string; username: string; content: string; type?: 'text' | 'sticker' | 'power'; stickerId?: string; replyTo?: any; powerOptions?: { textColor: string, bgColor: string }, pendingId?: string }) => {
+    socket.on('send_message', async (data: { roomId: string; userId: string; username: string; content: string; type?: 'text' | 'sticker' | 'power' | 'bullet'; stickerId?: string; replyTo?: any; powerOptions?: { textColor: string, bgColor: string }, bulletOptions?: { targetUsername: string, emoji: string, text: string }, pendingId?: string }) => {
       try {
-        const { roomId, userId, username, content, type, stickerId, replyTo, powerOptions, pendingId } = data;
+        const { roomId, userId, username, content, type, stickerId, replyTo, powerOptions, bulletOptions, pendingId } = data;
         
         // Validate that room and user actually exist in storage
         const room = await storage.rooms.getRoom(roomId);
@@ -199,6 +199,7 @@ app.prepare().then(() => {
           stickerId,
           replyTo,
           powerOptions,
+          bulletOptions,
           pendingId
         });
 
