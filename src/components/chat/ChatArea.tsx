@@ -650,8 +650,8 @@ export function ChatArea({ socket }: { socket: Socket | null }) {
                       )}
                       </div>
                     </SwipeToReply>
-                                   {/* Action Buttons */}
-                  <div className="flex gap-1.5 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all self-center shrink-0 absolute top-1/2 -translate-y-1/2 z-50" style={{ [isOwn ? 'right' : 'left']: 'calc(100% + 10px)' }}>
+                  {/* Action Buttons */}
+                  <div className={`flex gap-1.5 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all absolute -top-4 sm:-top-5 z-50 ${isOwn ? 'right-4' : 'left-4'}`}>
                     {!isOwn && item.msg.type === 'sticker' && item.msg.stickerId && (
                       <button 
                         onClick={() => handleSaveSticker(item.msg.stickerId!)}
