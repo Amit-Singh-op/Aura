@@ -686,9 +686,7 @@ export function ChatArea({ socket }: { socket: Socket | null }) {
                           
                           <div className={`
                             fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2
-                            sm:absolute sm:top-auto sm:translate-x-0 sm:translate-y-0 sm:bottom-[calc(100%+8px)] 
-                            ${isOwn ? 'sm:right-0 sm:origin-bottom-right' : 'sm:left-0 sm:origin-bottom-left'} 
-                            z-[100] bg-comic-bg border-4 border-comic-ink rounded-3xl sm:rounded-full shadow-comic flex flex-wrap justify-center p-2 gap-1.5 sm:gap-1 animate-in zoom-in-75 duration-200 w-[260px] sm:w-max max-w-[90vw]
+                            z-[100] bg-comic-bg border-4 border-comic-ink rounded-3xl sm:rounded-full shadow-comic-hover flex flex-wrap justify-center p-2 sm:p-3 gap-1.5 sm:gap-2 animate-in zoom-in-75 duration-200 w-[260px] sm:w-max max-w-[90vw]
                           `}>
                             {['❤️', '😂', '🤡', '🎉', '👍', '👎', '🔥'].map(emoji => (
                               <button
