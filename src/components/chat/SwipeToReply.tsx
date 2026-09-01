@@ -26,6 +26,9 @@ export function SwipeToReply({
   const MAX_SWIPE = 80;
 
   const handleDragStart = (clientX: number, clientY: number) => {
+    // Only allow swipe-to-reply on mobile devices (<768px matches tailwind 'md' breakpoint)
+    if (typeof window !== 'undefined' && window.innerWidth >= 768) return;
+
     startX.current = clientX;
     startY.current = clientY;
     setIsDragging(true);
@@ -86,7 +89,7 @@ export function SwipeToReply({
 
   return (
     <div 
-      className="relative flex flex-col items-start touch-pan-y"
+      className={`relative flex flex-col touch-pan-y ${direction === 'left' ? 'items-end' : 'items-start'}`}
       onTouchStart={(e) => handleDragStart(e.touches[0].clientX, e.touches[0].clientY)}
       onTouchMove={(e) => handleDragMove(e.touches[0].clientX, e.touches[0].clientY)}
       onTouchEnd={handleDragEnd}
@@ -106,7 +109,19 @@ export function SwipeToReply({
         }}
       >
         <div className="bg-comic-pink rounded-xl p-2 text-white border-2 border-comic-ink shadow-comic-sm">
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/></svg>
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+            {direction === 'right' ? (
+              <>
+                <polyline points="9 17 4 12 9 7"/>
+                <path d="M20 18v-2a4 4 0 0 0-4-4H4"/>
+              </>
+            ) : (
+              <>
+                <polyline points="15 17 20 12 15 7"/>
+                <path d="M4 18v-2a4 4 0 0 1 4-4h12"/>
+              </>
+            )}
+          </svg>
         </div>
       </div>
 
