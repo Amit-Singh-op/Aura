@@ -36,6 +36,7 @@ const config = {
           orange: '#FF6B35',
           purple: '#6C4AB6',
           teal: '#1FB5A3',
+          red: '#FF2A4C',
         },
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
@@ -85,10 +86,15 @@ const config = {
           from: { height: "var(--radix-accordion-content-height)" },
           to: { height: "0" },
         },
+        "wiggle": {
+          "0%, 100%": { transform: "rotate(-3deg) scale(1.05)" },
+          "50%": { transform: "rotate(3deg) scale(0.95)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+        "wiggle": "wiggle 0.2s ease-in-out infinite",
       },
     },
   },

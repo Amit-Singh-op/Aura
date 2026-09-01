@@ -2,7 +2,17 @@
 
 import React, { useRef, useState } from 'react';
 
-export function SwipeToReply({ onReply, children }: { onReply: () => void, children: React.ReactNode }) {
+export function SwipeToReply({ 
+  onReply, 
+  children,
+  direction = 'right',
+  onSwipeChange 
+}: { 
+  onReply: () => void, 
+  children: React.ReactNode,
+  direction?: 'left' | 'right',
+  onSwipeChange?: (isSwiping: boolean) => void
+}) {
   const [offset, setOffset] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const startX = useRef(0);
@@ -19,6 +29,7 @@ export function SwipeToReply({ onReply, children }: { onReply: () => void, child
     startX.current = clientX;
     startY.current = clientY;
     setIsDragging(true);
+    if (onSwipeChange) onSwipeChange(true);
     isHorizontalDrag.current = null;
   };
 
@@ -35,6 +46,7 @@ export function SwipeToReply({ onReply, children }: { onReply: () => void, child
       } else if (Math.abs(diffY) > 5) {
         isHorizontalDrag.current = false;
         setIsDragging(false);
+        if (onSwipeChange) onSwipeChange(false);
         return;
       } else {
         return;
@@ -45,9 +57,13 @@ export function SwipeToReply({ onReply, children }: { onReply: () => void, child
     
     currentX.current = clientX;
     
-    if (diffX > 0) {
+    if (direction === 'right' && diffX > 0) {
       const resistance = diffX > SWIPE_THRESHOLD ? 0.3 : 1;
       const newOffset = Math.min(diffX * resistance, MAX_SWIPE);
+      setOffset(newOffset);
+    } else if (direction === 'left' && diffX < 0) {
+      const resistance = Math.abs(diffX) > SWIPE_THRESHOLD ? 0.3 : 1;
+      const newOffset = Math.max(diffX * resistance, -MAX_SWIPE);
       setOffset(newOffset);
     } else {
        setOffset(0);
@@ -57,7 +73,8 @@ export function SwipeToReply({ onReply, children }: { onReply: () => void, child
   const handleDragEnd = () => {
     if (!isDragging) return;
     setIsDragging(false);
-    if (offset > SWIPE_THRESHOLD) {
+    if (onSwipeChange) onSwipeChange(false);
+    if (Math.abs(offset) > SWIPE_THRESHOLD) {
       onReply();
       if (typeof window !== 'undefined' && window.navigator && window.navigator.vibrate) {
         window.navigator.vibrate(50);
@@ -81,10 +98,10 @@ export function SwipeToReply({ onReply, children }: { onReply: () => void, child
       onMouseLeave={handleDragEnd}
     >
       <div 
-        className="absolute left-0 top-1/2 -translate-y-1/2 flex items-center justify-center transition-opacity duration-200 pointer-events-none"
+        className={`absolute ${direction === 'right' ? 'left-0' : 'right-0'} top-1/2 -translate-y-1/2 flex items-center justify-center transition-opacity duration-200 pointer-events-none`}
         style={{ 
-          opacity: Math.min(offset / SWIPE_THRESHOLD, 1),
-          transform: `translate(${Math.min(offset - 40, 0)}px, -50%)`,
+          opacity: Math.min(Math.abs(offset) / SWIPE_THRESHOLD, 1),
+          transform: `translate(${direction === 'right' ? Math.min(offset - 40, 0) : Math.max(offset + 40, 0)}px, -50%)`,
           zIndex: 0,
         }}
       >

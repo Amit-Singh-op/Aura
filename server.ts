@@ -225,13 +225,24 @@ app.prepare().then(() => {
           }
         }
 
+        // Global Summon
+        if (type === 'text' && content?.toLowerCase().includes('#all')) {
+          io.emit('global_summon', {
+            roomId,
+            roomName: room.name,
+            username,
+            message: content
+          });
+        }
+
         // 2. Mentions
         if (type === 'text' && content) {
           const mentions = content.match(/@(\w+)/g);
           if (mentions) {
-            const usernames = Array.from(new Set(mentions.map(m => m.substring(1))));
+            const usernames = Array.from(new Set(mentions.map(m => m.substring(1).toLowerCase())));
+
             for (const mentionedUsername of usernames) {
-              if (mentionedUsername === username) continue; // Don't notify self
+              if (mentionedUsername === username.toLowerCase()) continue; // Don't notify self
               
               const mentionedUser = await storage.users.findUserByUsername(mentionedUsername);
               if (mentionedUser && !notifiedUserIds.has(mentionedUser.id)) {

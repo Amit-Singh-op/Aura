@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { Sidebar } from './Sidebar';
 import { ChatArea } from './ChatArea';
+import { GlobalSummon } from './GlobalSummon';
 import { useChatStore } from '@/store/chatStore';
 import { io, Socket } from 'socket.io-client';
 
@@ -45,6 +46,7 @@ export function ChatLayout() {
 
   return (
     <div className="flex h-[100dvh] bg-comic-bg overflow-hidden relative z-0">
+      <GlobalSummon socket={socket} />
       {/* Workspace Container */}
       <div className="flex flex-1 w-full mx-auto bg-comic-bg overflow-hidden">
         <div className={`w-full md:w-80 shrink-0 ${activeRoomId ? 'hidden md:flex' : 'flex'}`}>

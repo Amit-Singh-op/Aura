@@ -32,6 +32,7 @@ export function ChatArea({ socket }: { socket: Socket | null }) {
   const [powerAnimations, setPowerAnimations] = useState<{id: string, text: string, textColor: string, bgColor: string}[]>([]);
   const [bulletAnimations, setBulletAnimations] = useState<{id: string, emoji: string, text: string}[]>([]);
   const [showReactionPickerFor, setShowReactionPickerFor] = useState<string | null>(null);
+  const [swipingMessageId, setSwipingMessageId] = useState<string | null>(null);
   const [powerTextColor, setPowerTextColor] = useState('#ffffff');
   const [powerBgColor, setPowerBgColor] = useState('transparent');
   const [downloadingStickers, setDownloadingStickers] = useState<Record<string, boolean>>({});
@@ -387,12 +388,19 @@ export function ChatArea({ socket }: { socket: Socket | null }) {
   }
 
   const renderMessageContent = (content: string, isOwnMessage: boolean) => {
-    const parts = content.split(/(@\w+)/g);
+    const parts = content.split(/(@\w+|#all)/gi);
     return parts.map((part, i) => {
       if (part.startsWith('@')) {
         return (
           <span key={i} className={`font-bold ${isOwnMessage ? 'text-white' : 'text-indigo-600 dark:text-indigo-400'}`}>
             {part}
+          </span>
+        );
+      }
+      if (part.toLowerCase() === '#all') {
+        return (
+          <span key={i} className="inline-block bg-comic-red text-white font-black text-xs sm:text-sm px-2 py-1 rounded-lg border-2 border-comic-ink animate-pulse shadow-comic-sm transform -rotate-2 mx-1 mt-1 uppercase tracking-widest whitespace-nowrap">
+            🚨 Global Summon 🚨
           </span>
         );
       }
@@ -528,7 +536,10 @@ export function ChatArea({ socket }: { socket: Socket | null }) {
                 
                 <div className={`flex flex-col ${isOwn ? 'items-end' : 'items-start'} max-w-[85vw] sm:max-w-[75%]`}>
                   <div className={`flex items-center gap-2 relative ${isOwn ? 'flex-row-reverse' : 'flex-row'} w-fit max-w-full`}>
-                      <SwipeToReply onReply={() => {
+                      <SwipeToReply 
+                        direction={isOwn ? 'left' : 'right'}
+                        onSwipeChange={(isSwiping) => setSwipingMessageId(isSwiping ? item.msg.id : null)}
+                        onReply={() => {
                       setReplyingTo(item.msg);
                       setTimeout(() => inputRef.current?.focus(), 0);
                     }}>
@@ -651,7 +662,7 @@ export function ChatArea({ socket }: { socket: Socket | null }) {
                       </div>
                     </SwipeToReply>
                   {/* Action Buttons */}
-                  <div className="flex gap-1.5 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all self-center shrink-0 absolute top-1/2 -translate-y-1/2 z-50" style={{ [isOwn ? 'right' : 'left']: 'calc(100% + 10px)' }}>
+                  <div className={`flex gap-1.5 pointer-events-none transition-all self-center shrink-0 absolute top-1/2 -translate-y-1/2 z-50 ${swipingMessageId === item.msg.id ? 'opacity-0' : 'opacity-0 group-hover:opacity-100 group-hover:pointer-events-auto'}`} style={{ [isOwn ? 'right' : 'left']: 'calc(100% + 10px)' }}>
                     {!isOwn && item.msg.type === 'sticker' && item.msg.stickerId && (
                       <button 
                         onClick={() => handleSaveSticker(item.msg.stickerId!)}
@@ -848,6 +859,27 @@ export function ChatArea({ socket }: { socket: Socket | null }) {
                   <span className="hidden sm:inline text-lg">{action.emoji}</span>
                 </button>
               ))}
+            </div>
+          )}
+
+          {/* #all Global Summon Hint Popup */}
+          {inputValue.toLowerCase().includes('#all') && (
+            <div className="absolute bottom-[calc(100%+12px)] left-1/2 -translate-x-1/2 bg-white border-4 border-comic-ink rounded-[20px] shadow-comic z-50 animate-in fade-in zoom-in-95 duration-200 flex flex-col items-center justify-center overflow-hidden max-w-[95vw] w-max transform -rotate-1">
+              <div className="w-full bg-comic-yellow border-b-4 border-comic-ink p-2 px-6 text-center relative overflow-hidden">
+                <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 10px, #000 10px, #000 20px)' }}></div>
+                <div className="text-4xl relative z-10 animate-bounce drop-shadow-lg mb-1">🚨</div>
+                <div 
+                  className="font-heading font-black text-white text-xl sm:text-2xl uppercase tracking-widest relative z-10" 
+                  style={{ textShadow: '3px 3px 0 #2B1B3D', WebkitTextStroke: '1px #2B1B3D' }}
+                >
+                  GLOBAL SUMMON
+                </div>
+              </div>
+              <div className="px-4 py-3 bg-comic-bg text-center w-full">
+                <div className="text-xs sm:text-sm font-bold text-comic-ink leading-relaxed">
+                  This will alert <span className="bg-comic-pink text-white px-1.5 py-0.5 rounded-lg border-2 border-comic-ink inline-block transform -rotate-3 uppercase mx-0.5">EVERYONE</span><br/> online to join! 🤡
+                </div>
+              </div>
             </div>
           )}
 
