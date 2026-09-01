@@ -400,7 +400,7 @@ export function ChatArea({ socket }: { socket: Socket | null }) {
               className={`font-heading font-black text-xl sm:text-3xl text-center leading-tight tracking-wide ${isOwnMessage ? 'text-comic-ink' : 'text-comic-purple'}`}
               style={!isOwnMessage ? { textShadow: '2px 2px 0 #2B1B3D', WebkitTextStroke: '1px #2B1B3D', color: '#FF3D7F' } : {}}
             >
-              "{customMsg}"
+              &quot;{customMsg}&quot;
             </span>
           )}
         </div>

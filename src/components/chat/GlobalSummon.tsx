@@ -155,13 +155,13 @@ export function GlobalSummon({ socket }: { socket: Socket | null }) {
         </p>
 
         {(() => {
-          const customMessage = summonEvent.message.replace(/#all/gi, '').trim();
-          if (!customMessage) return null;
+          const customMsg = summonEvent.message.replace(/#all/gi, '').trim();
+          if (!customMsg) return null;
           return (
             <div className="bg-white border-4 border-comic-ink p-4 sm:p-6 rounded-2xl mb-8 transform -rotate-1 shadow-comic relative max-w-xl mx-auto w-full">
               <div className="absolute -top-3 left-4 bg-comic-yellow px-2 py-1 border-2 border-comic-ink rounded-lg text-xs font-black uppercase tracking-wider transform -rotate-6">Alert Message</div>
               <p className="font-bold text-xl sm:text-2xl text-comic-ink whitespace-pre-wrap break-words mt-2 text-left">
-                "{customMessage}"
+                &quot;{customMsg}&quot;
               </p>
             </div>
           );
