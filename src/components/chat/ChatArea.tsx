@@ -388,19 +388,31 @@ export function ChatArea({ socket }: { socket: Socket | null }) {
   }
 
   const renderMessageContent = (content: string, isOwnMessage: boolean) => {
-    const parts = content.split(/(@\w+|#all)/gi);
+    if (content.toLowerCase().includes('#all')) {
+      const customMsg = content.replace(/#all/gi, '').trim();
+      return (
+        <div className="flex flex-col items-center justify-center p-2 sm:p-4 mt-1 w-full min-w-[200px] sm:min-w-[250px]">
+          <span className="inline-block bg-comic-red text-white font-black text-[10px] sm:text-xs px-3 py-1 rounded-full border-2 border-comic-ink animate-pulse shadow-comic-sm transform -rotate-3 mb-3 uppercase tracking-widest whitespace-nowrap">
+            🚨 Global Summon 🚨
+          </span>
+          {customMsg && (
+            <span 
+              className={`font-heading font-black text-xl sm:text-3xl text-center leading-tight tracking-wide ${isOwnMessage ? 'text-comic-ink' : 'text-comic-purple'}`}
+              style={!isOwnMessage ? { textShadow: '2px 2px 0 #2B1B3D', WebkitTextStroke: '1px #2B1B3D', color: '#FF3D7F' } : {}}
+            >
+              "{customMsg}"
+            </span>
+          )}
+        </div>
+      );
+    }
+
+    const parts = content.split(/(@\w+)/gi);
     return parts.map((part, i) => {
       if (part.startsWith('@')) {
         return (
           <span key={i} className={`font-bold ${isOwnMessage ? 'text-white' : 'text-indigo-600 dark:text-indigo-400'}`}>
             {part}
-          </span>
-        );
-      }
-      if (part.toLowerCase() === '#all') {
-        return (
-          <span key={i} className="inline-block bg-comic-red text-white font-black text-xs sm:text-sm px-2 py-1 rounded-lg border-2 border-comic-ink animate-pulse shadow-comic-sm transform -rotate-2 mx-1 mt-1 uppercase tracking-widest whitespace-nowrap">
-            🚨 Global Summon 🚨
           </span>
         );
       }
@@ -877,7 +889,8 @@ export function ChatArea({ socket }: { socket: Socket | null }) {
               </div>
               <div className="px-4 py-3 bg-comic-bg text-center w-full">
                 <div className="text-xs sm:text-sm font-bold text-comic-ink leading-relaxed">
-                  This will alert <span className="bg-comic-pink text-white px-1.5 py-0.5 rounded-lg border-2 border-comic-ink inline-block transform -rotate-3 uppercase mx-0.5">EVERYONE</span><br/> online to join! 🤡
+                  This will alert <span className="bg-comic-pink text-white px-1.5 py-0.5 rounded-lg border-2 border-comic-ink inline-block transform -rotate-3 uppercase mx-0.5">EVERYONE</span><br/> online to join! 🤡<br/>
+                  <span className="text-comic-orange font-black mt-2 inline-block">Type a message after #all to announce it in a funny voice!</span>
                 </div>
               </div>
             </div>

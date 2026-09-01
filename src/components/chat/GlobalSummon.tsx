@@ -27,39 +27,82 @@ export function GlobalSummon({ socket }: { socket: Socket | null }) {
 
       setSummonEvent(data);
 
-      // Play crazy siren audio using AudioContext
-      try {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
-        const oscillator = audioCtx.createOscillator();
-        const gainNode = audioCtx.createGain();
+      const customMsg = data.message.replace(/#all/gi, '').trim();
 
-        // Siren effect
-        oscillator.type = 'sawtooth';
-        oscillator.frequency.setValueAtTime(400, audioCtx.currentTime);
-        oscillator.frequency.linearRampToValueAtTime(800, audioCtx.currentTime + 0.3);
-        oscillator.frequency.linearRampToValueAtTime(400, audioCtx.currentTime + 0.6);
-        oscillator.frequency.linearRampToValueAtTime(800, audioCtx.currentTime + 0.9);
-        oscillator.frequency.linearRampToValueAtTime(400, audioCtx.currentTime + 1.2);
-        oscillator.frequency.linearRampToValueAtTime(800, audioCtx.currentTime + 1.5);
+      if (customMsg && 'speechSynthesis' in window) {
+        // Play custom message using SpeechSynthesis with a chaotic ECHO effect
+        for (let i = 0; i < 3; i++) {
+          setTimeout(() => {
+            const utterance = new SpeechSynthesisUtterance(customMsg);
+            utterance.pitch = 1.8 + (i * 0.2); // Increasingly high pitch
+            utterance.rate = 1.3 + (i * 0.1);  // Increasingly fast
+            utterance.volume = 1.0;
+            window.speechSynthesis.speak(utterance);
+          }, i * 200); // 200ms delay creates a horrible, annoying echo
+        }
+        
+        // AND play a quiet, annoying backing track (siren) at the same time
+        try {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+          const oscillator = audioCtx.createOscillator();
+          const gainNode = audioCtx.createGain();
+          oscillator.type = 'square'; // harsher sound
+          oscillator.frequency.setValueAtTime(800, audioCtx.currentTime);
+          oscillator.frequency.linearRampToValueAtTime(1200, audioCtx.currentTime + 0.1);
+          oscillator.frequency.linearRampToValueAtTime(800, audioCtx.currentTime + 0.2);
+          
+          gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
+          gainNode.gain.linearRampToValueAtTime(0.1, audioCtx.currentTime + 0.05); // Quiet but annoying
+          gainNode.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 2.0);
+          
+          oscillator.connect(gainNode);
+          gainNode.connect(audioCtx.destination);
+          oscillator.start();
+          oscillator.stop(audioCtx.currentTime + 2.0);
+        } catch (e) {
+          console.error("Audio play failed:", e);
+        }
+      } else {
+        // Play default synthetic siren
+        try {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+          const oscillator = audioCtx.createOscillator();
+          const gainNode = audioCtx.createGain();
 
-        gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
-        gainNode.gain.linearRampToValueAtTime(0.3, audioCtx.currentTime + 0.1); // Slightly lower volume
-        gainNode.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 1.8);
+          // Siren effect
+          oscillator.type = 'sawtooth';
+          oscillator.frequency.setValueAtTime(400, audioCtx.currentTime);
+          oscillator.frequency.linearRampToValueAtTime(800, audioCtx.currentTime + 0.3);
+          oscillator.frequency.linearRampToValueAtTime(400, audioCtx.currentTime + 0.6);
+          oscillator.frequency.linearRampToValueAtTime(800, audioCtx.currentTime + 0.9);
+          oscillator.frequency.linearRampToValueAtTime(400, audioCtx.currentTime + 1.2);
+          oscillator.frequency.linearRampToValueAtTime(800, audioCtx.currentTime + 1.5);
 
-        oscillator.connect(gainNode);
-        gainNode.connect(audioCtx.destination);
-        oscillator.start();
-        oscillator.stop(audioCtx.currentTime + 2.0);
-      } catch (e) {
-        console.error("Audio play failed:", e);
+          gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
+          gainNode.gain.linearRampToValueAtTime(0.3, audioCtx.currentTime + 0.1); // Slightly lower volume
+          gainNode.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 1.8);
+
+          oscillator.connect(gainNode);
+          gainNode.connect(audioCtx.destination);
+          oscillator.start();
+          oscillator.stop(audioCtx.currentTime + 2.0);
+        } catch (e) {
+          console.error("Audio play failed:", e);
+        }
       }
 
       // Show OS Notification if tab is hidden
       if (document.hidden && 'Notification' in window && Notification.permission === 'granted') {
         try {
+          const customMsg = data.message.replace(/#all/gi, '').trim();
+          const bodyText = customMsg 
+            ? `${data.username} says: "${customMsg}"\nThey are summoning everyone to ${data.roomName}!` 
+            : `${data.username} is summoning everyone to ${data.roomName}!`;
+
           const notification = new Notification('🚨 WAKE UP! 🤡', {
-            body: `${data.username} is summoning everyone to ${data.roomName}!`,
+            body: bodyText,
             icon: '/favicon.ico',
           });
           notification.onclick = () => {
@@ -90,7 +133,7 @@ export function GlobalSummon({ socket }: { socket: Socket | null }) {
   return (
     <div className="fixed inset-0 z-[99999] pointer-events-auto flex items-center justify-center bg-black/70 backdrop-blur-md animate-in fade-in duration-300">
       <div 
-        className="animate-wiggle bg-comic-yellow border-8 border-comic-ink rounded-[40px] p-8 sm:p-12 max-w-3xl text-center shadow-[16px_16px_0px_0px_#2B1B3D] cursor-pointer"
+        className="animate-wiggle bg-comic-yellow border-8 border-comic-red rounded-[40px] p-8 sm:p-12 max-w-3xl text-center shadow-[16px_16px_0px_0px_#FF2A4C] cursor-pointer hover:scale-110 transition-transform animate-pulse saturate-[200%] contrast-125 drop-shadow-[0_0_50px_rgba(255,42,76,0.8)]"
         onClick={() => {
           setActiveRoomId(summonEvent.roomId);
           setSummonEvent(null);
@@ -106,10 +149,24 @@ export function GlobalSummon({ socket }: { socket: Socket | null }) {
         >
           WAKE UP!
         </h1>
-        <p className="font-bold text-2xl sm:text-3xl text-comic-ink mb-8 leading-snug">
+        <p className="font-bold text-2xl sm:text-3xl text-comic-ink mb-6 leading-snug">
           <span className="text-comic-pink bg-white px-2 py-1 rounded-lg border-2 border-comic-ink">{summonEvent.username}</span> is summoning EVERYONE to <br/>
           <span className="text-comic-purple font-black text-4xl mt-4 block">{summonEvent.roomName}</span>
         </p>
+
+        {(() => {
+          const customMessage = summonEvent.message.replace(/#all/gi, '').trim();
+          if (!customMessage) return null;
+          return (
+            <div className="bg-white border-4 border-comic-ink p-4 sm:p-6 rounded-2xl mb-8 transform -rotate-1 shadow-comic relative max-w-xl mx-auto w-full">
+              <div className="absolute -top-3 left-4 bg-comic-yellow px-2 py-1 border-2 border-comic-ink rounded-lg text-xs font-black uppercase tracking-wider transform -rotate-6">Alert Message</div>
+              <p className="font-bold text-xl sm:text-2xl text-comic-ink whitespace-pre-wrap break-words mt-2 text-left">
+                "{customMessage}"
+              </p>
+            </div>
+          );
+        })()}
+
         <div className="inline-block bg-comic-pink text-white font-black text-3xl px-8 py-4 rounded-full border-4 border-comic-ink shadow-comic-hover transform hover:scale-110 transition-transform animate-pulse">
           JOIN NOW! 🏃💨
         </div>
