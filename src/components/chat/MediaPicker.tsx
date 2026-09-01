@@ -164,7 +164,7 @@ export function MediaPicker({ onEmojiSelect, onStickerSelect, onClose }: MediaPi
             )}
 
             {isCreating && (
-              <form onSubmit={handleCreateSticker} className="mb-4 p-4 rounded-2xl bg-comic-yellow/30 border-4 border-comic-ink shadow-comic flex flex-col items-center">
+              <div className="mb-4 p-4 rounded-2xl bg-comic-yellow/30 border-4 border-comic-ink shadow-comic flex flex-col items-center">
                 <h4 className="text-sm font-heading font-bold text-comic-ink mb-3 w-full text-left">Upload Image or GIF</h4>
                 
                 <label className={`w-full relative flex flex-col items-center justify-center h-32 rounded-2xl border-4 cursor-pointer transition-all ${previewUrl ? 'border-comic-ink bg-white' : 'border-dashed border-comic-ink hover:bg-comic-yellow bg-white/60'}`}>
@@ -184,11 +184,11 @@ export function MediaPicker({ onEmojiSelect, onStickerSelect, onClose }: MediaPi
                 
                 <div className="flex gap-2 w-full mt-4">
                   <Button type="button" variant="ghost" onClick={() => { setIsCreating(false); setSelectedFile(null); setPreviewUrl(null); }} className="flex-1 rounded-xl h-10 border-2 border-transparent hover:border-comic-ink font-bold text-comic-ink">Cancel</Button>
-                  <Button type="submit" disabled={!selectedFile || loading} className="flex-1 rounded-xl h-10 border-2 border-comic-ink bg-comic-orange text-comic-ink font-bold shadow-comic-sm hover:-translate-y-0.5 hover:shadow-comic transition-all">
+                  <Button type="button" onClick={handleCreateSticker} disabled={!selectedFile || loading} className="flex-1 rounded-xl h-10 border-2 border-comic-ink bg-comic-orange text-comic-ink font-bold shadow-comic-sm hover:-translate-y-0.5 hover:shadow-comic transition-all">
                     {loading ? <div className="text-lg animate-spin">🤡</div> : 'Upload & Save'}
                   </Button>
                 </div>
-              </form>
+              </div>
             )}
 
             <div className="grid grid-cols-3 gap-3 pb-6">

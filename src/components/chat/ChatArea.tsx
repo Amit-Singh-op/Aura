@@ -33,6 +33,7 @@ export function ChatArea({ socket }: { socket: Socket | null }) {
   const [bulletAnimations, setBulletAnimations] = useState<{id: string, emoji: string, text: string}[]>([]);
   const [showReactionPickerFor, setShowReactionPickerFor] = useState<string | null>(null);
   const [swipingMessageId, setSwipingMessageId] = useState<string | null>(null);
+  const [fullScreenImage, setFullScreenImage] = useState<string | null>(null);
   const [powerTextColor, setPowerTextColor] = useState('#ffffff');
   const [powerBgColor, setPowerBgColor] = useState('transparent');
   const [downloadingStickers, setDownloadingStickers] = useState<Record<string, boolean>>({});
@@ -611,6 +612,7 @@ export function ChatArea({ socket }: { socket: Socket | null }) {
                           <img 
                             src={item.msg.content} 
                             alt="Sticker" 
+                            onClick={() => setFullScreenImage(item.msg.content)}
                             className={`max-w-[200px] max-h-[200px] object-contain hover:scale-105 transition-transform duration-200 cursor-pointer ${
                               isOwn 
                                 ? 'rounded-2xl border-4 border-comic-ink shadow-comic bg-comic-yellow p-1.5' 
@@ -1016,6 +1018,37 @@ export function ChatArea({ socket }: { socket: Socket | null }) {
           <kbd className="font-heading px-1.5 py-0.5 bg-comic-ink/10 rounded-md border border-comic-ink/20">Enter</kbd> to send, <kbd className="font-heading px-1.5 py-0.5 bg-comic-ink/10 rounded-md border border-comic-ink/20">Shift + Enter</kbd> for new line
         </div>
       </div>
+
+      {/* Full-Screen Image Modal */}
+      {fullScreenImage && (
+        <div 
+          className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 sm:p-8 animate-in fade-in duration-200"
+          onClick={() => setFullScreenImage(null)}
+        >
+          <div className="relative animate-in zoom-in-95 duration-300 max-w-[95vw] sm:max-w-[85vw] max-h-[90vh] flex flex-col items-center">
+            <button 
+              onClick={(e) => {
+                e.stopPropagation();
+                setFullScreenImage(null);
+              }}
+              className="absolute -top-3 -right-3 sm:-top-5 sm:-right-5 w-10 h-10 sm:w-14 sm:h-14 bg-comic-red text-white border-2 sm:border-4 border-comic-ink rounded-full flex items-center justify-center hover:scale-110 hover:-rotate-12 transition-transform shadow-comic-sm z-50 font-black text-lg sm:text-2xl font-heading"
+            >
+              X
+            </button>
+            <div 
+              className="max-w-full max-h-[90vh] overflow-y-auto rounded-2xl sm:rounded-3xl border-4 sm:border-8 border-comic-ink shadow-[8px_8px_0px_0px_#FFCC33] sm:shadow-[16px_16px_0px_0px_#FFCC33] bg-white [&::-webkit-scrollbar]:w-3 sm:[&::-webkit-scrollbar]:w-4 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-comic-pink [&::-webkit-scrollbar-thumb]:border-2 sm:[&::-webkit-scrollbar-thumb]:border-4 [&::-webkit-scrollbar-thumb]:border-comic-ink [&::-webkit-scrollbar-thumb]:rounded-full"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img 
+                src={fullScreenImage} 
+                alt="Full Screen Preview" 
+                className="max-w-full h-auto block" 
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

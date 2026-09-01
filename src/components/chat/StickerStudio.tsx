@@ -12,7 +12,7 @@ interface StickerStudioProps {
 
 type Point = { x: number; y: number };
 type Stroke = { color: string; width: number; points: Point[] };
-type TextBlock = { id: string; text: string; x: number; y: number };
+type TextBlock = { id: string; text: string; x: number; y: number; color: string; size: number; bgColor: string };
 
 export function StickerStudio({ onStickerCreated, onCancel }: StickerStudioProps) {
   const [mode, setMode] = useState<'upload' | 'draw' | null>(null);
@@ -22,6 +22,7 @@ export function StickerStudio({ onStickerCreated, onCancel }: StickerStudioProps
   // Text Overlay State
   const [textBlocks, setTextBlocks] = useState<TextBlock[]>([]);
   const [draggingTextId, setDraggingTextId] = useState<string | null>(null);
+  const [selectedTextId, setSelectedTextId] = useState<string | null>(null);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -197,12 +198,13 @@ export function StickerStudio({ onStickerCreated, onCancel }: StickerStudioProps
   };
   // ----------------------------------------
 
-  // Text Management
   const addTextBlock = () => {
+    const newId = Math.random().toString(36).substr(2, 9);
     setTextBlocks(prev => [
       ...prev,
-      { id: Math.random().toString(36).substr(2, 9), text: 'NEW TEXT', x: canvasSize.width / 2, y: canvasSize.height / 2 }
+      { id: newId, text: 'NEW TEXT', x: canvasSize.width / 2, y: canvasSize.height / 2, color: '#ffffff', size: 40, bgColor: '#a855f7' }
     ]);
+    setSelectedTextId(newId);
   };
 
   const removeTextBlock = (id: string) => {
@@ -353,7 +355,10 @@ export function StickerStudio({ onStickerCreated, onCancel }: StickerStudioProps
   }
 
   const editorContent = (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-comic-bg/80 backdrop-blur-sm sm:p-4">
+    <div 
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-comic-bg/80 backdrop-blur-sm sm:p-4"
+      onPointerDown={() => setSelectedTextId(null)}
+    >
       <div className="flex flex-col w-full max-w-2xl bg-white border-4 border-comic-ink rounded-none sm:rounded-3xl shadow-comic p-4 sm:p-6 relative overflow-hidden h-[100dvh] sm:h-[90vh] sm:max-h-[900px]">
 
         <div className="flex justify-between items-center mb-4 px-2 z-10 relative">
@@ -417,32 +422,83 @@ export function StickerStudio({ onStickerCreated, onCancel }: StickerStudioProps
             {textBlocks.map(block => (
               <div 
                 key={block.id}
-                className={`text-block absolute flex items-center gap-2 p-2 rounded-xl border-4 bg-comic-purple text-white shadow-comic transition-colors ${draggingTextId === block.id ? 'border-comic-yellow' : 'border-comic-ink'}`}
+                onPointerDown={(e) => { e.stopPropagation(); setSelectedTextId(block.id); }}
+                className={`text-block absolute flex flex-col items-center gap-1 p-2 rounded-2xl border-4 backdrop-blur-sm shadow-comic transition-colors z-20 ${selectedTextId === block.id ? 'border-comic-yellow' : 'border-comic-ink'}`}
                 style={{ 
+                  backgroundColor: block.bgColor,
                   left: `${(block.x / canvasSize.width) * 100}%`, 
                   top: `${(block.y / canvasSize.height) * 100}%`,
                   transform: 'translate(-50%, -50%)',
                 }}
               >
-                <div 
-                  className="cursor-move p-1 hover:text-comic-yellow"
-                  onPointerDown={(e) => { e.preventDefault(); setDraggingTextId(block.id); }}
-                >
-                  <GripHorizontal className="w-6 h-6" />
+                {/* Text Controls (Only visible when active/dragging) */}
+                {selectedTextId === block.id && (
+                  <div className="flex items-center gap-2 bg-white rounded-xl px-2 py-1.5 border-2 border-comic-ink shadow-comic-sm mb-1 pointer-events-auto" onPointerDown={(e) => e.stopPropagation()}>
+                    <div className="flex flex-col items-center gap-1">
+                      <span className="text-[9px] font-black uppercase text-comic-ink leading-none">Text</span>
+                      <input 
+                        type="color" 
+                        value={block.color}
+                        onChange={(e) => setTextBlocks(prev => prev.map(t => t.id === block.id ? { ...t, color: e.target.value } : t))}
+                        className="w-5 h-5 rounded-full cursor-pointer border-0 p-0 bg-transparent"
+                        title="Text Color"
+                      />
+                    </div>
+                    <div className="w-px h-6 bg-comic-ink/20 mx-0.5"></div>
+                    <div className="flex flex-col items-center gap-1">
+                      <span className="text-[9px] font-black uppercase text-comic-ink leading-none">Box</span>
+                      <input 
+                        type="color" 
+                        value={block.bgColor}
+                        onChange={(e) => setTextBlocks(prev => prev.map(t => t.id === block.id ? { ...t, bgColor: e.target.value } : t))}
+                        className="w-5 h-5 rounded-full cursor-pointer border-0 p-0 bg-transparent"
+                        title="Background Color"
+                      />
+                    </div>
+                    <div className="w-px h-6 bg-comic-ink/20 mx-0.5"></div>
+                    <div className="flex flex-col items-center gap-1">
+                      <span className="text-[9px] font-black uppercase text-comic-ink leading-none">Size</span>
+                      <input 
+                        type="range" min="12" max="120" 
+                        value={block.size}
+                        onChange={(e) => setTextBlocks(prev => prev.map(t => t.id === block.id ? { ...t, size: parseInt(e.target.value) } : t))}
+                        className="w-16 sm:w-24 accent-comic-pink cursor-pointer h-4"
+                        title="Text Size"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex items-center gap-2 pointer-events-auto w-full justify-center">
+                  <div 
+                    className="cursor-move p-2 hover:text-comic-yellow text-white bg-comic-ink/20 rounded-lg backdrop-blur-md"
+                    onPointerDown={(e) => { e.preventDefault(); setDraggingTextId(block.id); setSelectedTextId(block.id); }}
+                  >
+                    <GripHorizontal className="w-5 h-5" />
+                  </div>
+                  
+                  <input 
+                    type="text" 
+                    value={block.text}
+                    onPointerDown={(e) => { e.stopPropagation(); setSelectedTextId(block.id); }}
+                    onChange={(e) => setTextBlocks(prev => prev.map(t => t.id === block.id ? { ...t, text: e.target.value } : t))}
+                    className="bg-transparent font-heading font-black uppercase outline-none text-center placeholder:text-white/50 min-w-[100px]"
+                    style={{ 
+                      color: block.color,
+                      fontSize: `${block.size}px`,
+                      width: `${Math.max(100, block.text.length * (block.size * 0.65))}px`,
+                      maxWidth: '80vw',
+                      textShadow: '4px 4px 0 #2B1B3D, -2px -2px 0 #2B1B3D, 2px -2px 0 #2B1B3D, -2px 2px 0 #2B1B3D' 
+                    }}
+                  />
+                  
+                  <button 
+                    onClick={() => removeTextBlock(block.id)}
+                    className="p-2 hover:bg-comic-pink text-white bg-comic-red rounded-lg border-2 border-comic-ink shadow-comic-sm transition-colors"
+                  >
+                    <Trash2 className="w-5 h-5" />
+                  </button>
                 </div>
-                <input 
-                  type="text" 
-                  value={block.text}
-                  onChange={(e) => setTextBlocks(prev => prev.map(t => t.id === block.id ? { ...t, text: e.target.value } : t))}
-                  className="bg-transparent text-white font-heading font-black uppercase text-3xl outline-none w-[200px] text-center placeholder:text-white/50"
-                  style={{ textShadow: '4px 4px 0 #2B1B3D, -2px -2px 0 #2B1B3D, 2px -2px 0 #2B1B3D, -2px 2px 0 #2B1B3D' }}
-                />
-                <button 
-                  onClick={() => removeTextBlock(block.id)}
-                  className="p-1 hover:text-comic-pink text-white"
-                >
-                  <Trash2 className="w-5 h-5" />
-                </button>
               </div>
             ))}
           </div>
