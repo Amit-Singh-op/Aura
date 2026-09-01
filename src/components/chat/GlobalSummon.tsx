@@ -30,41 +30,21 @@ export function GlobalSummon({ socket }: { socket: Socket | null }) {
       const customMsg = data.message.replace(/#all/gi, '').trim();
 
       if (customMsg && 'speechSynthesis' in window) {
-        // Play custom message using SpeechSynthesis with a chaotic ECHO effect
-        for (let i = 0; i < 3; i++) {
-          setTimeout(() => {
-            const utterance = new SpeechSynthesisUtterance(customMsg);
-            utterance.pitch = 1.8 + (i * 0.2); // Increasingly high pitch
-            utterance.rate = 1.3 + (i * 0.1);  // Increasingly fast
-            utterance.volume = 1.0;
-            window.speechSynthesis.speak(utterance);
-          }, i * 200); // 200ms delay creates a horrible, annoying echo
-        }
+        // Play custom message using SpeechSynthesis in a slow, funky voice
+        const utterance = new SpeechSynthesisUtterance(customMsg);
+        utterance.pitch = 0.4; // Funky deep voice
+        utterance.rate = 0.75; // Slow motion but clearly understandable
+        utterance.volume = 1.0;
         
-        // AND play a quiet, annoying backing track (siren) at the same time
-        try {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
-          const oscillator = audioCtx.createOscillator();
-          const gainNode = audioCtx.createGain();
-          oscillator.type = 'square'; // harsher sound
-          oscillator.frequency.setValueAtTime(800, audioCtx.currentTime);
-          oscillator.frequency.linearRampToValueAtTime(1200, audioCtx.currentTime + 0.1);
-          oscillator.frequency.linearRampToValueAtTime(800, audioCtx.currentTime + 0.2);
-          
-          gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
-          gainNode.gain.linearRampToValueAtTime(0.1, audioCtx.currentTime + 0.05); // Quiet but annoying
-          gainNode.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 2.0);
-          
-          oscillator.connect(gainNode);
-          gainNode.connect(audioCtx.destination);
-          oscillator.start();
-          oscillator.stop(audioCtx.currentTime + 2.0);
-        } catch (e) {
-          console.error("Audio play failed:", e);
+        // Try to pick a cool voice if available
+        const voices = window.speechSynthesis.getVoices();
+        const funkyVoice = voices.find(v => v.name.includes('Daniel') || v.name.includes('UK English') || v.name.includes('Google UK English Male'));
+        if (funkyVoice) {
+          utterance.voice = funkyVoice;
         }
-      } else {
-        // Play default synthetic siren
+
+        window.speechSynthesis.speak(utterance);
+      } else if (!customMsg) {      // Play default synthetic siren
         try {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
