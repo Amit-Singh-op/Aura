@@ -528,7 +528,7 @@ export function ChatArea({ socket }: { socket: Socket | null }) {
 
         <button
           onClick={() => setShowVideoCall(true)}
-          className={`px-4 py-2 rounded-xl border-2 border-comic-ink font-bold flex items-center gap-2 transition-all ${
+          className={`ml-auto shrink-0 px-4 py-2 rounded-xl border-2 border-comic-ink font-bold flex items-center gap-2 transition-all ${
             videoStatus.active 
               ? 'bg-comic-pink text-comic-ink animate-pulse shadow-comic-hover' 
               : 'bg-comic-yellow text-comic-ink hover:bg-yellow-400'
