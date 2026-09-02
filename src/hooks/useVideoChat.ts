@@ -22,24 +22,38 @@ const getMediaWithFallback = async (facingMode: 'user' | 'environment' = 'user')
     noiseSuppression: true,
     autoGainControl: true
   };
-  const videoConstraints = {
-    facingMode,
+  
+  let videoConstraints: any = {
+    facingMode: facingMode === 'environment' ? { exact: 'environment' } : 'user',
     width: { ideal: 1280 },
-    frameRate: { ideal: 30, max: 60 } // Smooth video
+    frameRate: { ideal: 30, max: 60 }
   };
 
   try {
     return await navigator.mediaDevices.getUserMedia({ video: videoConstraints, audio: audioConstraints });
   } catch (e1) {
-    console.warn('[VideoChat] Failed video+audio, trying video only:', e1);
+    console.warn('[VideoChat] Failed with exact facingMode, trying fallback constraints:', e1);
+    
+    // Fallback to non-exact facingMode
+    videoConstraints = {
+      facingMode,
+      width: { ideal: 1280 },
+      frameRate: { ideal: 30, max: 60 }
+    };
+    
     try {
-      return await navigator.mediaDevices.getUserMedia({ video: videoConstraints });
+      return await navigator.mediaDevices.getUserMedia({ video: videoConstraints, audio: audioConstraints });
     } catch (e2) {
-      console.warn('[VideoChat] Failed video, trying audio only:', e2);
+      console.warn('[VideoChat] Failed video+audio, trying video only:', e2);
       try {
-        return await navigator.mediaDevices.getUserMedia({ audio: audioConstraints });
+        return await navigator.mediaDevices.getUserMedia({ video: videoConstraints });
       } catch (e3) {
-        throw new Error('Completely failed to access any media device');
+        console.warn('[VideoChat] Failed video, trying audio only:', e3);
+        try {
+          return await navigator.mediaDevices.getUserMedia({ audio: audioConstraints });
+        } catch (e4) {
+          throw new Error('Completely failed to access any media device');
+        }
       }
     }
   }
@@ -54,6 +68,14 @@ export function useVideoChat({ socket, roomId, userId, username, isActive }: Use
 
   const peersRef = useRef<{ [socketId: string]: RTCPeerConnection }>({});
   const localStreamRef = useRef<MediaStream | null>(null);
+  const isMountedRef = useRef(true);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   // Synchronize localStream state with ref
   useEffect(() => {
@@ -130,11 +152,19 @@ export function useVideoChat({ socket, roomId, userId, username, isActive }: Use
 
     let mediaStream: MediaStream | null = null;
     let joined = false;
+    let isUnmounted = false;
 
     const init = async () => {
       try {
         console.log('[VideoChat] Requesting media devices...');
         mediaStream = await getMediaWithFallback(facingMode);
+        
+        if (isUnmounted) {
+          console.log('[VideoChat] Component unmounted before media was acquired. Stopping tracks.');
+          mediaStream.getTracks().forEach(track => track.stop());
+          return;
+        }
+        
         console.log('[VideoChat] Media devices acquired successfully');
         setLocalStream(mediaStream);
         localStreamRef.current = mediaStream; // Set ref immediately to avoid race conditions
@@ -151,6 +181,7 @@ export function useVideoChat({ socket, roomId, userId, username, isActive }: Use
     init();
 
     return () => {
+      isUnmounted = true;
       console.log('[VideoChat] Cleaning up video chat session');
       if (joined) {
         socket.emit('leave_video', { roomId, userId });
@@ -160,8 +191,9 @@ export function useVideoChat({ socket, roomId, userId, username, isActive }: Use
       if (localStreamRef.current) {
         localStreamRef.current.getTracks().forEach(track => {
           track.stop();
-          console.log('[VideoChat] Stopped track:', track.kind);
+          console.log('[VideoChat] Stopped track on unmount:', track.kind);
         });
+        localStreamRef.current = null;
       }
       setLocalStream(null);
       setParticipants([]);
@@ -252,6 +284,12 @@ export function useVideoChat({ socket, roomId, userId, username, isActive }: Use
     try {
       console.log('[VideoChat] Dynamically acquiring media devices...');
       const stream = await getMediaWithFallback(mode);
+      
+      if (!isMountedRef.current || !isActive) {
+         stream.getTracks().forEach(track => track.stop());
+         return null;
+      }
+      
       setLocalStream(stream);
       localStreamRef.current = stream;
 
@@ -311,6 +349,11 @@ export function useVideoChat({ socket, roomId, userId, username, isActive }: Use
     try {
       const stream = await getMediaWithFallback(newFacingMode);
       
+      if (!isMountedRef.current || !isActive) {
+        stream.getTracks().forEach(track => track.stop());
+        return;
+      }
+      
       const oldStream = localStreamRef.current;
       if (oldStream) {
         // Stop old video tracks to release the hardware
@@ -324,6 +367,12 @@ export function useVideoChat({ socket, roomId, userId, username, isActive }: Use
         // Add the old audio tracks
         oldStream.getAudioTracks().forEach(track => {
           newStream.addTrack(track);
+        });
+        
+        // Stop the NEW audio tracks since we are reusing the old ones!
+        // This prevents the microphone from staying active after the call ends.
+        stream.getAudioTracks().forEach(track => {
+          track.stop();
         });
         
         // Add the new video tracks
