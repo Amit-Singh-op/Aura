@@ -57,6 +57,7 @@ app.prepare().then(() => {
   // Keep track of which users are in which rooms to broadcast presence
   // Map<roomId, Map<userId, { username: string, sockets: Set<socketId> }>>
   const roomUsers = new Map<string, Map<string, { username: string, sockets: Set<string> }>>();
+  const activeVideoRooms = new Set<string>();
 
   io.on('connection', (socket: Socket) => {
     console.log('Client connected:', socket.id);
@@ -97,6 +98,9 @@ app.prepare().then(() => {
         count: usersInRoom.length,
         users: usersInRoom,
       });
+
+      // Notify the joining user about the video call status
+      socket.emit('video_status', { roomId, active: activeVideoRooms.has(roomId) });
 
       if (isFirstConnection) {
         socket.to(roomId).emit('system_message', {
@@ -302,6 +306,72 @@ app.prepare().then(() => {
       } catch (err) {
         console.error('Failed to mark delivered:', err);
       }
+    });
+
+    socket.on('join_video', (payload: { roomId: string; userId: string; username: string }) => {
+      const videoRoom = `video-${payload.roomId}`;
+      socket.join(videoRoom);
+
+      const alreadyActive = activeVideoRooms.has(payload.roomId);
+      if (!alreadyActive) {
+        activeVideoRooms.add(payload.roomId);
+        
+        io.to(payload.roomId).emit('video_started', {
+          roomId: payload.roomId,
+          userId: payload.userId,
+          username: payload.username,
+        });
+
+        io.to(payload.roomId).emit('system_message', {
+          id: crypto.randomUUID(),
+          roomId: payload.roomId,
+          userId: 'system',
+          username: 'System',
+          content: `${payload.username} started a video call! 🎥`,
+          timestamp: Date.now(),
+        });
+      }
+
+      socket.emit('video_status', { roomId: payload.roomId, active: activeVideoRooms.has(payload.roomId) });
+      socket.to(videoRoom).emit('video_user_joined', { ...payload, socketId: socket.id });
+    });
+
+    socket.on('leave_video', (payload: { roomId: string; userId: string }) => {
+      const videoRoom = `video-${payload.roomId}`;
+      socket.leave(videoRoom);
+      
+      socket.to(videoRoom).emit('video_user_left', { ...payload, socketId: socket.id });
+      
+      const room = io.sockets.adapter.rooms.get(videoRoom);
+      if (!room || room.size === 0) {
+        activeVideoRooms.delete(payload.roomId);
+        
+        io.to(payload.roomId).emit('video_ended', {
+          roomId: payload.roomId,
+        });
+
+        io.to(payload.roomId).emit('system_message', {
+          id: crypto.randomUUID(),
+          roomId: payload.roomId,
+          userId: 'system',
+          username: 'System',
+          content: `Video call ended.`,
+          timestamp: Date.now(),
+        });
+      }
+    });
+
+    // Signaling messages for WebRTC
+    socket.on('video_offer', (payload: { from: string; to: string; data: any }) => {
+      socket.to(payload.to).emit('video_offer', payload);
+    });
+
+    socket.on('video_answer', (payload: { from: string; to: string; data: any }) => {
+      socket.to(payload.to).emit('video_answer', payload);
+    });
+
+    socket.on('ice_candidate', (payload: { from: string; to: string; data: any }) => {
+      socket.to(payload.to).emit('ice_candidate', payload);
     });
 
     socket.on('mark_seen', async (data: { roomId: string; messageId: string; userId: string }) => {

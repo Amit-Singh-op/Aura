@@ -538,17 +538,17 @@ export function ChatArea({ socket }: { socket: Socket | null }) {
           <span className="hidden sm:inline">{videoStatus.active ? 'Join Video' : 'Start Video'}</span>
         </button>
       </div>
-
-      {showVideoCall && activeRoomId && (
-        <VideoChatPanel
-          socket={socket!}
-          roomId={activeRoomId}
-          userId={currentUser?.id ?? ''}
-          username={currentUser?.username ?? ''}
-          onClose={() => setShowVideoCall(false)}
-        />
-      )}
     </div>
+
+    {showVideoCall && activeRoomId && (
+      <VideoChatPanel
+        socket={socket!}
+        roomId={activeRoomId}
+        userId={currentUser?.id ?? ''}
+        username={currentUser?.username ?? ''}
+        onClose={() => setShowVideoCall(false)}
+      />
+    )}
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto overflow-x-hidden p-6 space-y-4" ref={containerRef} onClick={() => setShowMediaPicker(false)}>
