@@ -23,7 +23,7 @@ const getMediaWithFallback = async (facingMode: 'user' | 'environment' = 'user')
     autoGainControl: true
   };
   
-  let videoConstraints: any = {
+  let videoConstraints: MediaTrackConstraints = {
     facingMode: facingMode === 'environment' ? { exact: 'environment' } : 'user',
     width: { ideal: 1280 },
     frameRate: { ideal: 30, max: 60 }
@@ -144,7 +144,7 @@ export function useVideoChat({ socket, roomId, userId, username, isActive }: Use
 
     peersRef.current[peerId] = pc;
     return pc;
-  }, [socket]);
+  }, [socket, username]);
 
   // Handle joining room and getting media
   useEffect(() => {
@@ -198,6 +198,7 @@ export function useVideoChat({ socket, roomId, userId, username, isActive }: Use
       setLocalStream(null);
       setParticipants([]);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isActive, socket, roomId, userId, username]);
 
   // Handle socket events
@@ -277,7 +278,8 @@ export function useVideoChat({ socket, roomId, userId, username, isActive }: Use
       socket.off('video_answer', handleAnswer);
       socket.off('ice_candidate', handleIceCandidate);
     };
-  }, [socket, isActive, createPeer]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [socket, isActive, createPeer, username]);
 
   const acquireMediaAndBroadcast = async (mode: 'user' | 'environment' = facingMode) => {
     if (!socket) return null;
