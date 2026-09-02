@@ -313,16 +313,27 @@ export function useVideoChat({ socket, roomId, userId, username, isActive }: Use
       
       const oldStream = localStreamRef.current;
       if (oldStream) {
-        // Stop old video tracks
+        // Stop old video tracks to release the hardware
         oldStream.getVideoTracks().forEach(track => {
           track.stop();
-          oldStream.removeTrack(track);
         });
         
-        // Add new video tracks to existing stream
-        stream.getVideoTracks().forEach(track => {
-          oldStream.addTrack(track);
+        // We need to construct a totally new MediaStream object to guarantee React/iOS updates the <video> tag
+        const newStream = new MediaStream();
+        
+        // Add the old audio tracks
+        oldStream.getAudioTracks().forEach(track => {
+          newStream.addTrack(track);
         });
+        
+        // Add the new video tracks
+        stream.getVideoTracks().forEach(track => {
+          newStream.addTrack(track);
+        });
+
+        // Trigger a full React state update so the <video srcObject={localStream}> rebinds
+        setLocalStream(newStream);
+        localStreamRef.current = newStream;
         
         // Replace track in peer connections (no renegotiation needed)
         Object.values(peersRef.current).forEach(pc => {

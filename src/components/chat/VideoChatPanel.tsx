@@ -121,43 +121,43 @@ export const VideoChatPanel: React.FC<VideoChatPanelProps> = ({ socket, roomId, 
         </div>
 
         {/* Controls */}
-        <div className="flex items-center justify-center gap-6 py-6 bg-white border-t-4 border-comic-ink relative z-10">
+        <div className="flex items-center justify-center gap-2 sm:gap-6 py-4 sm:py-6 bg-white border-t-4 border-comic-ink relative z-10 px-2">
           <button
             onClick={toggleMute}
-            className={`flex items-center justify-center p-4 rounded-full border-4 border-comic-ink shadow-comic transition-all hover:-translate-y-1 active:translate-y-1 active:shadow-none ${
+            className={`flex items-center justify-center p-3 sm:p-4 rounded-full border-4 border-comic-ink shadow-comic transition-all hover:-translate-y-1 active:translate-y-1 active:shadow-none ${
               isMuted ? 'bg-comic-red' : 'bg-comic-yellow'
             }`}
             title={isMuted ? 'Unmute' : 'Mute'}
           >
-            {isMuted ? <MicOff className="w-8 h-8 text-white" /> : <Mic className="w-8 h-8 text-comic-ink" />}
+            {isMuted ? <MicOff className="w-6 h-6 sm:w-8 sm:h-8 text-white" /> : <Mic className="w-6 h-6 sm:w-8 sm:h-8 text-comic-ink" />}
           </button>
           
           <button
             onClick={toggleVideo}
-            className={`flex items-center justify-center p-4 rounded-full border-4 border-comic-ink shadow-comic transition-all hover:-translate-y-1 active:translate-y-1 active:shadow-none ${
+            className={`flex items-center justify-center p-3 sm:p-4 rounded-full border-4 border-comic-ink shadow-comic transition-all hover:-translate-y-1 active:translate-y-1 active:shadow-none ${
               isVideoOff ? 'bg-comic-red' : 'bg-comic-teal'
             }`}
             title={isVideoOff ? 'Turn on camera' : 'Turn off camera'}
           >
-            {isVideoOff ? <VideoOff className="w-8 h-8 text-white" /> : <Video className="w-8 h-8 text-comic-ink" />}
+            {isVideoOff ? <VideoOff className="w-6 h-6 sm:w-8 sm:h-8 text-white" /> : <Video className="w-6 h-6 sm:w-8 sm:h-8 text-comic-ink" />}
           </button>
 
           {!isVideoOff && (
             <button
               onClick={flipCamera}
-              className="flex items-center justify-center p-4 rounded-full border-4 border-comic-ink bg-comic-purple shadow-comic transition-all hover:-translate-y-1 active:translate-y-1 active:shadow-none"
+              className="flex items-center justify-center p-3 sm:p-4 rounded-full border-4 border-comic-ink bg-comic-purple shadow-comic transition-all hover:-translate-y-1 active:translate-y-1 active:shadow-none"
               title="Flip Camera"
             >
-              <RefreshCcw className="w-8 h-8 text-white" />
+              <RefreshCcw className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
             </button>
           )}
           
           <button
             onClick={onClose}
-            className="flex items-center justify-center px-8 py-4 rounded-2xl bg-comic-red border-4 border-comic-ink shadow-comic transition-all hover:-translate-y-1 hover:bg-red-500 active:translate-y-1 active:shadow-none"
+            className="flex items-center justify-center px-4 sm:px-8 py-3 sm:py-4 rounded-2xl bg-comic-red border-4 border-comic-ink shadow-comic transition-all hover:-translate-y-1 hover:bg-red-500 active:translate-y-1 active:shadow-none"
             title="End Call"
           >
-            <span className="text-white font-black font-heading text-xl tracking-wider">HANG UP</span>
+            <span className="text-white font-black font-heading text-sm sm:text-xl tracking-wider">HANG UP</span>
           </button>
         </div>
 
