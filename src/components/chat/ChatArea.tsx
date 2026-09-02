@@ -3,13 +3,14 @@ import { useEffect, useState, useRef } from 'react';
 import { Socket } from 'socket.io-client';
 import { useChatStore } from '@/store/chatStore';
 import { Button } from '@/components/ui/button';
-import { Send, MessageSquareDashed, SmilePlus, Download, X, Sparkles, ChevronLeft, Smile, Check, CheckCheck, Clock } from 'lucide-react';
+import { Send, MessageSquareDashed, SmilePlus, Download, X, Sparkles, ChevronLeft, Smile, Check, CheckCheck, Clock, Video } from 'lucide-react';
 import { Message, Sticker } from '@/lib/storage/types';
 import EmojiPicker, { Theme } from 'emoji-picker-react';
 import { MediaPicker } from './MediaPicker';
 import { PowerShower } from './PowerShower';
 import { BulletShower } from './BulletShower';
 import { SwipeToReply } from './SwipeToReply';
+import { VideoChatPanel } from './VideoChatPanel';
 
 const BULLET_ACTIONS = [
   { id: 'chal bhag', emoji: '🏃‍♂️💨', label: 'chal bhag' },
@@ -42,6 +43,10 @@ export function ChatArea({ socket }: { socket: Socket | null }) {
   const [allUsers, setAllUsers] = useState<{id: string, username: string}[]>([]);
   const [mentionQuery, setMentionQuery] = useState<string | null>(null);
   const [mentionIndex, setMentionIndex] = useState(0);
+
+  // Video Chat States
+  const [showVideoCall, setShowVideoCall] = useState(false);
+  const [videoStatus, setVideoStatus] = useState<{ active: boolean, users: string[] }>({ active: false, users: [] });
 
   useEffect(() => {
     fetch('/api/users')
@@ -141,6 +146,13 @@ export function ChatArea({ socket }: { socket: Socket | null }) {
         }
       });
 
+      socket.on('video_status', (data: { roomId: string, active: boolean, users: string[] }) => {
+        if (data.roomId === activeRoomId) {
+          setVideoStatus({ active: data.active, users: data.users || [] });
+        }
+      });
+      socket.emit('check_video_status', { roomId: activeRoomId });
+
       socket.on('message_status_update', (data: { messageId: string, roomId: string, deliveredTo?: string[], seenBy?: string[] }) => {
         if (data.roomId === activeRoomId) {
           updateMessageStatus(data.roomId, data.messageId, {
@@ -201,6 +213,7 @@ export function ChatArea({ socket }: { socket: Socket | null }) {
         socket.off('app_error');
         socket.off('message_reaction_updated');
         socket.off('message_status_update');
+        socket.off('video_status');
       }
       setTypingUsers([]);
       setRoomUsers([]);
@@ -512,7 +525,29 @@ export function ChatArea({ socket }: { socket: Socket | null }) {
             </p>
           </div>
         </div>
+
+        <button
+          onClick={() => setShowVideoCall(true)}
+          className={`px-4 py-2 rounded-xl border-2 border-comic-ink font-bold flex items-center gap-2 transition-all ${
+            videoStatus.active 
+              ? 'bg-comic-pink text-comic-ink animate-pulse shadow-comic-hover' 
+              : 'bg-comic-yellow text-comic-ink hover:bg-yellow-400'
+          }`}
+        >
+          <Video className="w-5 h-5" />
+          <span className="hidden sm:inline">{videoStatus.active ? 'Join Video' : 'Start Video'}</span>
+        </button>
       </div>
+
+      {showVideoCall && activeRoomId && (
+        <VideoChatPanel
+          socket={socket!}
+          roomId={activeRoomId}
+          userId={currentUser?.id ?? ''}
+          username={currentUser?.username ?? ''}
+          onClose={() => setShowVideoCall(false)}
+        />
+      )}
     </div>
 
       {/* Messages */}
