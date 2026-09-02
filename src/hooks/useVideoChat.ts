@@ -17,8 +17,14 @@ export interface Participant {
 }
 
 const getMediaWithFallback = async (): Promise<MediaStream> => {
+  const audioConstraints = {
+    echoCancellation: true,
+    noiseSuppression: true,
+    autoGainControl: true
+  };
+
   try {
-    return await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+    return await navigator.mediaDevices.getUserMedia({ video: true, audio: audioConstraints });
   } catch (e1) {
     console.warn('[VideoChat] Failed video+audio, trying video only:', e1);
     try {
@@ -26,7 +32,7 @@ const getMediaWithFallback = async (): Promise<MediaStream> => {
     } catch (e2) {
       console.warn('[VideoChat] Failed video, trying audio only:', e2);
       try {
-        return await navigator.mediaDevices.getUserMedia({ audio: true });
+        return await navigator.mediaDevices.getUserMedia({ audio: audioConstraints });
       } catch (e3) {
         throw new Error('Completely failed to access any media device');
       }
@@ -73,11 +79,16 @@ export function useVideoChat({ socket, roomId, userId, username, isActive }: Use
     });
 
     pc.ontrack = (event) => {
-      const remoteStream = event.streams[0];
+      console.log('[VideoChat] Track received!', event.track.kind);
+      const remoteStream = event.streams[0] || new MediaStream([event.track]);
       setParticipants((prev) => {
         const existing = prev.find((p) => p.id === peerId);
         if (existing) {
-          return prev.map((p) => (p.id === peerId ? { ...p, stream: remoteStream } : p));
+          const stream = existing.stream || new MediaStream();
+          if (!stream.getTracks().includes(event.track)) {
+            stream.addTrack(event.track);
+          }
+          return prev.map((p) => (p.id === peerId ? { ...p, stream } : p));
         }
         return [...prev, { id: peerId, stream: remoteStream, username: remoteUsername }];
       });
@@ -140,8 +151,11 @@ export function useVideoChat({ socket, roomId, userId, username, isActive }: Use
       }
       Object.values(peersRef.current).forEach(pc => pc.close());
       peersRef.current = {};
-      if (mediaStream) {
-        mediaStream.getTracks().forEach(track => track.stop());
+      if (localStreamRef.current) {
+        localStreamRef.current.getTracks().forEach(track => {
+          track.stop();
+          console.log('[VideoChat] Stopped track:', track.kind);
+        });
       }
       setLocalStream(null);
       setParticipants([]);

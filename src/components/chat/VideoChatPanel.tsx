@@ -21,6 +21,20 @@ export const VideoChatPanel: React.FC<VideoChatPanelProps> = ({ socket, roomId, 
     isActive: true,
   });
 
+  const [hasConnected, setHasConnected] = React.useState(false);
+
+  React.useEffect(() => {
+    if (participants.length > 0) {
+      setHasConnected(true);
+    }
+  }, [participants.length]);
+
+  React.useEffect(() => {
+    if (hasConnected && participants.length === 0) {
+      onClose();
+    }
+  }, [hasConnected, participants.length, onClose]);
+
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 sm:p-6 animate-in fade-in duration-200">
       <div className="relative w-full max-w-5xl max-h-full bg-comic-bg border-4 border-comic-ink rounded-3xl overflow-hidden shadow-comic flex flex-col transform transition-all">

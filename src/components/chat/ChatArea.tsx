@@ -151,6 +151,16 @@ export function ChatArea({ socket }: { socket: Socket | null }) {
           setVideoStatus({ active: data.active, users: data.users || [] });
         }
       });
+      socket.on('video_started', (data: { roomId: string }) => {
+        if (data.roomId === activeRoomId) {
+          setVideoStatus(prev => ({ ...prev, active: true }));
+        }
+      });
+      socket.on('video_ended', (data: { roomId: string }) => {
+        if (data.roomId === activeRoomId) {
+          setVideoStatus(prev => ({ ...prev, active: false, users: [] }));
+        }
+      });
       socket.emit('check_video_status', { roomId: activeRoomId });
 
       socket.on('message_status_update', (data: { messageId: string, roomId: string, deliveredTo?: string[], seenBy?: string[] }) => {
@@ -214,6 +224,8 @@ export function ChatArea({ socket }: { socket: Socket | null }) {
         socket.off('message_reaction_updated');
         socket.off('message_status_update');
         socket.off('video_status');
+        socket.off('video_started');
+        socket.off('video_ended');
       }
       setTypingUsers([]);
       setRoomUsers([]);
@@ -525,7 +537,7 @@ export function ChatArea({ socket }: { socket: Socket | null }) {
             </p>
           </div>
         </div>
-
+        </div>
         <button
           onClick={() => setShowVideoCall(true)}
           className={`ml-auto shrink-0 px-4 py-2 rounded-xl border-2 border-comic-ink font-bold flex items-center gap-2 transition-all ${
@@ -538,7 +550,6 @@ export function ChatArea({ socket }: { socket: Socket | null }) {
           <span className="hidden sm:inline">{videoStatus.active ? 'Join Video' : 'Start Video'}</span>
         </button>
       </div>
-    </div>
 
     {showVideoCall && activeRoomId && (
       <VideoChatPanel

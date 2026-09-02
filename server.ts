@@ -404,6 +404,30 @@ app.prepare().then(() => {
       socket.broadcast.emit('room_added', data);
     });
 
+    socket.on('disconnecting', () => {
+      socket.rooms.forEach((room) => {
+        if (room.startsWith('video-')) {
+          const roomId = room.replace('video-', '');
+          socket.to(room).emit('video_user_left', { socketId: socket.id, roomId });
+          
+          const adapterRoom = io.sockets.adapter.rooms.get(room);
+          // If room has 1 person (this socket), then it's about to be empty
+          if (!adapterRoom || adapterRoom.size <= 1) {
+            activeVideoRooms.delete(roomId);
+            io.to(roomId).emit('video_ended', { roomId });
+            io.to(roomId).emit('system_message', {
+              id: crypto.randomUUID(),
+              roomId,
+              userId: 'system',
+              username: 'System',
+              content: `Video call ended.`,
+              timestamp: Date.now(),
+            });
+          }
+        }
+      });
+    });
+
     socket.on('disconnect', () => {
       const { roomId, userId, username } = socket.data;
       if (roomId && userId) {
