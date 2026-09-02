@@ -1,6 +1,6 @@
 'use client';
 import React from 'react';
-import { X, Video, VideoOff, Mic, MicOff } from 'lucide-react';
+import { X, Video, VideoOff, Mic, MicOff, RefreshCcw } from 'lucide-react';
 import { Socket } from 'socket.io-client';
 import { useVideoChat } from '@/hooks/useVideoChat';
 
@@ -13,7 +13,7 @@ interface VideoChatPanelProps {
 }
 
 export const VideoChatPanel: React.FC<VideoChatPanelProps> = ({ socket, roomId, userId, username, onClose }) => {
-  const { localStream, participants, isMuted, isVideoOff, toggleMute, toggleVideo } = useVideoChat({
+  const { localStream, participants, isMuted, isVideoOff, facingMode, toggleMute, toggleVideo, flipCamera } = useVideoChat({
     roomId,
     userId,
     username,
@@ -73,6 +73,7 @@ export const VideoChatPanel: React.FC<VideoChatPanelProps> = ({ socket, roomId, 
                 playsInline
                 ref={(el) => { if (el && localStream) el.srcObject = localStream; }}
                 className="w-full h-full object-cover"
+                style={{ transform: facingMode === 'user' ? 'scaleX(-1)' : 'none' }}
               />
             ) : (
               <div className="w-full h-full flex flex-col items-center justify-center bg-slate-100">
@@ -140,6 +141,16 @@ export const VideoChatPanel: React.FC<VideoChatPanelProps> = ({ socket, roomId, 
           >
             {isVideoOff ? <VideoOff className="w-8 h-8 text-white" /> : <Video className="w-8 h-8 text-comic-ink" />}
           </button>
+
+          {!isVideoOff && (
+            <button
+              onClick={flipCamera}
+              className="flex items-center justify-center p-4 rounded-full border-4 border-comic-ink bg-comic-purple shadow-comic transition-all hover:-translate-y-1 active:translate-y-1 active:shadow-none"
+              title="Flip Camera"
+            >
+              <RefreshCcw className="w-8 h-8 text-white" />
+            </button>
+          )}
           
           <button
             onClick={onClose}

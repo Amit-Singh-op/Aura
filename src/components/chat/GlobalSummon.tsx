@@ -29,48 +29,57 @@ export function GlobalSummon({ socket }: { socket: Socket | null }) {
 
       const customMsg = data.message.replace(/#all/gi, '').trim();
 
+      // 1. Play default synthetic siren (LOUD)
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+        const oscillator = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+
+        // Siren effect (Louder and longer)
+        oscillator.type = 'sawtooth';
+        oscillator.frequency.setValueAtTime(400, audioCtx.currentTime);
+        oscillator.frequency.linearRampToValueAtTime(800, audioCtx.currentTime + 0.3);
+        oscillator.frequency.linearRampToValueAtTime(400, audioCtx.currentTime + 0.6);
+        oscillator.frequency.linearRampToValueAtTime(800, audioCtx.currentTime + 0.9);
+        oscillator.frequency.linearRampToValueAtTime(400, audioCtx.currentTime + 1.2);
+        oscillator.frequency.linearRampToValueAtTime(800, audioCtx.currentTime + 1.5);
+        oscillator.frequency.linearRampToValueAtTime(400, audioCtx.currentTime + 1.8);
+        oscillator.frequency.linearRampToValueAtTime(800, audioCtx.currentTime + 2.1);
+
+        gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
+        gainNode.gain.linearRampToValueAtTime(0.2, audioCtx.currentTime + 0.1); // Lowered so TTS is dominant
+        gainNode.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 2.4);
+
+        oscillator.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+        oscillator.start();
+        oscillator.stop(audioCtx.currentTime + 2.5);
+      } catch (e) {
+        console.error("Audio play failed:", e);
+      }
+
       if (customMsg && 'speechSynthesis' in window) {
-        // Play custom message using SpeechSynthesis in a slow, funky voice
-        const utterance = new SpeechSynthesisUtterance(customMsg);
-        utterance.pitch = 0.4; // Funky deep voice
-        utterance.rate = 0.75; // Slow motion but clearly understandable
-        utterance.volume = 1.0;
-        
-        // Try to pick a cool voice if available
         const voices = window.speechSynthesis.getVoices();
         const funkyVoice = voices.find(v => v.name.includes('Daniel') || v.name.includes('UK English') || v.name.includes('Google UK English Male'));
-        if (funkyVoice) {
-          utterance.voice = funkyVoice;
-        }
 
-        window.speechSynthesis.speak(utterance);
-      } else if (!customMsg) {      // Play default synthetic siren
-        try {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
-          const oscillator = audioCtx.createOscillator();
-          const gainNode = audioCtx.createGain();
+        // Play the message 3 times, increasing in intensity (pitch and speed)
+        const playUtterance = (pitch: number, rate: number) => {
+          const utterance = new SpeechSynthesisUtterance(customMsg);
+          utterance.pitch = pitch;
+          utterance.rate = rate;
+          utterance.volume = 1.0; // Max volume
+          if (funkyVoice) {
+            utterance.voice = funkyVoice;
+          }
+          window.speechSynthesis.speak(utterance);
+        };
 
-          // Siren effect
-          oscillator.type = 'sawtooth';
-          oscillator.frequency.setValueAtTime(400, audioCtx.currentTime);
-          oscillator.frequency.linearRampToValueAtTime(800, audioCtx.currentTime + 0.3);
-          oscillator.frequency.linearRampToValueAtTime(400, audioCtx.currentTime + 0.6);
-          oscillator.frequency.linearRampToValueAtTime(800, audioCtx.currentTime + 0.9);
-          oscillator.frequency.linearRampToValueAtTime(400, audioCtx.currentTime + 1.2);
-          oscillator.frequency.linearRampToValueAtTime(800, audioCtx.currentTime + 1.5);
-
-          gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
-          gainNode.gain.linearRampToValueAtTime(0.3, audioCtx.currentTime + 0.1); // Slightly lower volume
-          gainNode.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 1.8);
-
-          oscillator.connect(gainNode);
-          gainNode.connect(audioCtx.destination);
-          oscillator.start();
-          oscillator.stop(audioCtx.currentTime + 2.0);
-        } catch (e) {
-          console.error("Audio play failed:", e);
-        }
+        setTimeout(() => {
+          playUtterance(0.4, 0.75); // Deep, slow
+          playUtterance(0.6, 0.9);  // Medium, faster
+          playUtterance(0.9, 1.2);  // High, fastest
+        }, 800);
       }
 
       // Show OS Notification if tab is hidden

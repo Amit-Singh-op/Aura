@@ -16,19 +16,24 @@ export interface Participant {
   username?: string;
 }
 
-const getMediaWithFallback = async (): Promise<MediaStream> => {
+const getMediaWithFallback = async (facingMode: 'user' | 'environment' = 'user'): Promise<MediaStream> => {
   const audioConstraints = {
     echoCancellation: true,
     noiseSuppression: true,
     autoGainControl: true
   };
+  const videoConstraints = {
+    facingMode,
+    width: { ideal: 1280 },
+    frameRate: { ideal: 30, max: 60 } // Smooth video
+  };
 
   try {
-    return await navigator.mediaDevices.getUserMedia({ video: true, audio: audioConstraints });
+    return await navigator.mediaDevices.getUserMedia({ video: videoConstraints, audio: audioConstraints });
   } catch (e1) {
     console.warn('[VideoChat] Failed video+audio, trying video only:', e1);
     try {
-      return await navigator.mediaDevices.getUserMedia({ video: true });
+      return await navigator.mediaDevices.getUserMedia({ video: videoConstraints });
     } catch (e2) {
       console.warn('[VideoChat] Failed video, trying audio only:', e2);
       try {
@@ -45,6 +50,7 @@ export function useVideoChat({ socket, roomId, userId, username, isActive }: Use
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [isMuted, setIsMuted] = useState(false);
   const [isVideoOff, setIsVideoOff] = useState(false);
+  const [facingMode, setFacingMode] = useState<'user' | 'environment'>('user');
 
   const peersRef = useRef<{ [socketId: string]: RTCPeerConnection }>({});
   const localStreamRef = useRef<MediaStream | null>(null);
@@ -128,7 +134,7 @@ export function useVideoChat({ socket, roomId, userId, username, isActive }: Use
     const init = async () => {
       try {
         console.log('[VideoChat] Requesting media devices...');
-        mediaStream = await getMediaWithFallback();
+        mediaStream = await getMediaWithFallback(facingMode);
         console.log('[VideoChat] Media devices acquired successfully');
         setLocalStream(mediaStream);
         localStreamRef.current = mediaStream; // Set ref immediately to avoid race conditions
@@ -241,11 +247,11 @@ export function useVideoChat({ socket, roomId, userId, username, isActive }: Use
     };
   }, [socket, isActive, createPeer]);
 
-  const acquireMediaAndBroadcast = async () => {
+  const acquireMediaAndBroadcast = async (mode: 'user' | 'environment' = facingMode) => {
     if (!socket) return null;
     try {
       console.log('[VideoChat] Dynamically acquiring media devices...');
-      const stream = await getMediaWithFallback();
+      const stream = await getMediaWithFallback(mode);
       setLocalStream(stream);
       localStreamRef.current = stream;
 
@@ -298,12 +304,52 @@ export function useVideoChat({ socket, roomId, userId, username, isActive }: Use
     }
   };
 
+  const flipCamera = async () => {
+    const newFacingMode = facingMode === 'user' ? 'environment' : 'user';
+    setFacingMode(newFacingMode);
+    
+    try {
+      const stream = await getMediaWithFallback(newFacingMode);
+      
+      const oldStream = localStreamRef.current;
+      if (oldStream) {
+        // Stop old video tracks
+        oldStream.getVideoTracks().forEach(track => {
+          track.stop();
+          oldStream.removeTrack(track);
+        });
+        
+        // Add new video tracks to existing stream
+        stream.getVideoTracks().forEach(track => {
+          oldStream.addTrack(track);
+        });
+        
+        // Replace track in peer connections (no renegotiation needed)
+        Object.values(peersRef.current).forEach(pc => {
+          const senders = pc.getSenders();
+          stream.getVideoTracks().forEach(newTrack => {
+            const sender = senders.find(s => s.track && s.track.kind === 'video');
+            if (sender) {
+              sender.replaceTrack(newTrack);
+            }
+          });
+        });
+      } else {
+        await acquireMediaAndBroadcast(newFacingMode);
+      }
+    } catch (err) {
+      console.error('Failed to flip camera:', err);
+    }
+  };
+
   return {
     localStream,
     participants,
     isMuted,
     isVideoOff,
+    facingMode,
     toggleMute,
-    toggleVideo
+    toggleVideo,
+    flipCamera
   };
 }
