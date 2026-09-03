@@ -110,9 +110,9 @@ export function CameraFilter({ onCapture, onClose }: CameraFilterProps) {
 
   // Cleanup on unmount — runs even if handleClose was never called
   useEffect(() => {
+    const vid = videoRef.current;
     return () => {
       // Read directly from DOM to survive StrictMode's double-invoke
-      const vid = videoRef.current;
       if (vid) {
         const s = vid.srcObject as MediaStream | null;
         if (s) s.getTracks().forEach(t => { try { t.stop(); } catch { /**/ } });
