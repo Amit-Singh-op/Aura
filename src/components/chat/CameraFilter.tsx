@@ -2,8 +2,9 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   X, Camera, RotateCcw, Send, ChevronLeft, ChevronRight,
-  Sparkles, RefreshCcw, AlertCircle, Zap,
+  Sparkles, RefreshCcw, AlertCircle, Zap, Loader2, Check
 } from 'lucide-react';
+import { useFaceTracking } from '@/hooks/useFaceTracking';
 
 // ─── Filter definitions ────────────────────────────────────────────────────────
 interface Filter {
@@ -70,6 +71,7 @@ interface CameraFilterProps {
 export function CameraFilter({ onCapture, onClose }: CameraFilterProps) {
   const videoRef   = useRef<HTMLVideoElement>(null);
   const streamRef  = useRef<MediaStream | null>(null);
+  const canvasRef  = useRef<HTMLCanvasElement>(null);
   const isMirrored = useRef(true);
   const isMounted  = useRef(true);
   const cameraReqId = useRef(0);
@@ -93,6 +95,8 @@ export function CameraFilter({ onCapture, onClose }: CameraFilterProps) {
 
   const activeFilter  = FILTERS[activeFilterIdx];
   const activeOverlay = AR_OVERLAYS[activeOverlayIdx];
+
+  const { isModelLoaded } = useFaceTracking(videoRef, canvasRef, activeOverlay, isMirrored.current);
 
   // ── Stop stream & close ────────────────────────────────────────────────────
   // Use a plain object ref so React StrictMode double-invoke can't null it
@@ -231,12 +235,10 @@ export function CameraFilter({ onCapture, onClose }: CameraFilterProps) {
       ctx.fillStyle='rgba(0,0,0,0.09)';
       for (let y=0; y<h; y+=4) ctx.fillRect(0,y,w,1);
     }
-    if (activeOverlay.id !== 'none' && activeOverlay.emoji) {
-      const chars=Array.from(activeOverlay.emoji), fs=Math.min(w*.1,72);
-      ctx.font=`${fs}px serif`; ctx.textAlign='center';
-      const sp=w/(chars.length+1);
-      const yp=activeOverlay.position==='top'?fs+24:activeOverlay.position==='bottom'?h-24:h/2;
-      chars.forEach((e,i)=>ctx.fillText(e,sp*(i+1),yp));
+    
+    // Draw AR Tracking Canvas onto the final photo
+    if (canvasRef.current) {
+      ctx.drawImage(canvasRef.current, 0, 0, w, h);
     }
     setCapturedPhoto(cvs.toDataURL('image/jpeg', 0.92));
     setIsCapturing(false);
@@ -351,7 +353,7 @@ export function CameraFilter({ onCapture, onClose }: CameraFilterProps) {
 
           {/* Live feed */}
           <div className={`absolute inset-0 ${capturedPhoto ? 'invisible' : ''}`}>
-            <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-contain bg-black"
+            <video ref={videoRef} autoPlay playsInline muted className="absolute inset-0 w-full h-full object-contain bg-black"
               style={{
                 filter: activeFilter.cssFilter !== 'none' ? activeFilter.cssFilter : undefined,
                 transform: isMirrored.current ? 'scaleX(-1)' : undefined,
@@ -359,6 +361,9 @@ export function CameraFilter({ onCapture, onClose }: CameraFilterProps) {
                 opacity: cameraStatus === 'ready' ? 1 : 0,
               }}
             />
+            {/* AR Tracking Canvas */}
+            <canvas ref={canvasRef} className="absolute inset-0 w-full h-full object-contain pointer-events-none z-10" />
+
             {activeFilter.tint && cameraStatus === 'ready' && (
               <div className="absolute inset-0 pointer-events-none transition-colors duration-300"
                   style={{ backgroundColor: activeFilter.tint }} />
@@ -376,16 +381,6 @@ export function CameraFilter({ onCapture, onClose }: CameraFilterProps) {
                     style={{ filter:'hue-rotate(-90deg) saturate(2)', transform:isMirrored.current?'scaleX(-1) translateX(-6px)':'translateX(-6px)', mixBlendMode:'screen' }}
                     ref={el => { if (el && streamRef.current) el.srcObject = streamRef.current; }} />
                 </>
-              )}
-              {activeOverlay.id !== 'none' && activeOverlay.emoji && cameraStatus === 'ready' && (
-                <div className={`absolute left-0 right-0 pointer-events-none flex justify-around items-center px-6 ${
-                  activeOverlay.position === 'top' ? 'top-4' : activeOverlay.position === 'bottom' ? 'bottom-4' : 'top-1/2 -translate-y-1/2'
-                }`}>
-                  {Array.from(activeOverlay.emoji).map((e, i) => (
-                    <span key={i} className="text-6xl sm:text-7xl drop-shadow-[0_3px_12px_rgba(0,0,0,0.5)] animate-bounce"
-                      style={{ animationDelay:`${i*0.15}s`, animationDuration:'1.5s' }}>{e}</span>
-                  ))}
-                </div>
               )}
               {/* Comic viewfinder corners */}
               {cameraStatus === 'ready' && (
