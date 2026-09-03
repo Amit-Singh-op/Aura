@@ -71,6 +71,8 @@ export function CameraFilter({ onCapture, onClose }: CameraFilterProps) {
   const videoRef   = useRef<HTMLVideoElement>(null);
   const streamRef  = useRef<MediaStream | null>(null);
   const isMirrored = useRef(true);
+  const isMounted  = useRef(true);
+  const cameraReqId = useRef(0);
 
   const [activeFilterIdx,  setActiveFilterIdx]  = useState(0);
   const [activeOverlayIdx, setActiveOverlayIdx] = useState(0);
@@ -80,18 +82,23 @@ export function CameraFilter({ onCapture, onClose }: CameraFilterProps) {
   const [capturedPhoto,    setCapturedPhoto]    = useState<string | null>(null);
   const [isCapturing,      setIsCapturing]      = useState(false);
   const [showFilters,      setShowFilters]      = useState(true);
-  const [filterScroll,     setFilterScroll]     = useState(0);
   const [canFlip,          setCanFlip]          = useState(false);
+  const filterScrollRef = useRef<HTMLDivElement>(null);
+
+  const scrollFilters = (dir: 1 | -1) => {
+    if (filterScrollRef.current) {
+      filterScrollRef.current.scrollBy({ left: dir * 250, behavior: 'smooth' });
+    }
+  };
 
   const activeFilter  = FILTERS[activeFilterIdx];
   const activeOverlay = AR_OVERLAYS[activeOverlayIdx];
-  const VISIBLE = 5;
-  const maxScroll = Math.max(0, FILTERS.length - VISIBLE);
 
   // ── Stop stream & close ────────────────────────────────────────────────────
   // Use a plain object ref so React StrictMode double-invoke can't null it
   // before the real unmount happens.
   const stopStream = useCallback(() => {
+    cameraReqId.current += 1; // Abort any pending startCamera loops
     const stream = streamRef.current;
     if (stream) {
       stream.getTracks().forEach(t => { try { t.stop(); } catch { /**/ } });
@@ -110,8 +117,11 @@ export function CameraFilter({ onCapture, onClose }: CameraFilterProps) {
 
   // Cleanup on unmount — runs even if handleClose was never called
   useEffect(() => {
+    isMounted.current = true;
     const vid = videoRef.current;
     return () => {
+      isMounted.current = false;
+      cameraReqId.current += 1;
       // Read directly from DOM to survive StrictMode's double-invoke
       if (vid) {
         const s = vid.srcObject as MediaStream | null;
@@ -134,6 +144,8 @@ export function CameraFilter({ onCapture, onClose }: CameraFilterProps) {
   // ── Start camera ──────────────────────────────────────────────────────────
   const startCamera = useCallback(async (mode: 'user' | 'environment', isRetry = false) => {
     stopStream();
+    const currentReqId = ++cameraReqId.current;
+
     setCameraStatus('loading');
     setCameraError('');
     if (!navigator?.mediaDevices?.getUserMedia) {
@@ -149,6 +161,13 @@ export function CameraFilter({ onCapture, onClose }: CameraFilterProps) {
     for (let i = isRetry ? 2 : 0; i < tries.length; i++) {
       try {
         const stream = await navigator.mediaDevices.getUserMedia(tries[i]);
+        
+        // If unmounted or a new request started while waiting for getUserMedia, stop immediately!
+        if (!isMounted.current || cameraReqId.current !== currentReqId) {
+          stream.getTracks().forEach(t => { try { t.stop(); } catch { /**/ } });
+          return;
+        }
+
         streamRef.current = stream;
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
@@ -159,11 +178,15 @@ export function CameraFilter({ onCapture, onClose }: CameraFilterProps) {
             setTimeout(res, 3000);
           });
         }
+        
+        if (!isMounted.current || cameraReqId.current !== currentReqId) return;
+
         setCameraStatus('ready');
         return;
       } catch (err) {
         const n = err instanceof DOMException ? err.name : '';
         if (['NotAllowedError','PermissionDeniedError','NotFoundError','DevicesNotFoundError','SecurityError'].includes(n) || i === tries.length - 1) {
+          if (!isMounted.current || cameraReqId.current !== currentReqId) return;
           setCameraStatus('error');
           setCameraError(getCameraErrorMessage(err));
           return;
@@ -259,7 +282,7 @@ export function CameraFilter({ onCapture, onClose }: CameraFilterProps) {
           <div className="z-10 flex items-center gap-2">
             {/* active filter badge */}
             {cameraStatus === 'ready' && !capturedPhoto && (
-              <span className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 bg-comic-yellow border-2 border-comic-ink rounded-full font-heading font-black text-sm text-comic-ink shadow-comic-sm">
+              <span className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 bg-comic-yellow border-2 border-comic-ink rounded-full font-heading font-black text-sm text-comic-ink shadow-comic-sm whitespace-nowrap">
                 {activeFilter.emoji} {activeFilter.label}
               </span>
             )}
@@ -317,9 +340,9 @@ export function CameraFilter({ onCapture, onClose }: CameraFilterProps) {
 
           {/* Captured photo */}
           {capturedPhoto && (
-            <div className="absolute inset-0">
+            <div className="absolute inset-0 bg-black z-10">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={capturedPhoto} alt="Captured snap" className="w-full h-full object-cover" />
+              <img src={capturedPhoto} alt="Captured snap" className="w-full h-full object-contain" />
               {/* halftone comic texture overlay */}
               <div className="absolute inset-0 pointer-events-none"
                 style={{ backgroundImage:'radial-gradient(rgba(43,27,61,0.035) 1px,transparent 1px)', backgroundSize:'8px 8px' }} />
@@ -327,18 +350,17 @@ export function CameraFilter({ onCapture, onClose }: CameraFilterProps) {
           )}
 
           {/* Live feed */}
-          {!capturedPhoto && (
-            <div className="absolute inset-0">
-              <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover"
-                style={{
-                  filter: activeFilter.cssFilter !== 'none' ? activeFilter.cssFilter : undefined,
-                  transform: isMirrored.current ? 'scaleX(-1)' : undefined,
-                  transition: 'filter 0.3s ease',
-                  opacity: cameraStatus === 'ready' ? 1 : 0,
-                }}
-              />
-              {activeFilter.tint && cameraStatus === 'ready' && (
-                <div className="absolute inset-0 pointer-events-none transition-colors duration-300"
+          <div className={`absolute inset-0 ${capturedPhoto ? 'invisible' : ''}`}>
+            <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-contain bg-black"
+              style={{
+                filter: activeFilter.cssFilter !== 'none' ? activeFilter.cssFilter : undefined,
+                transform: isMirrored.current ? 'scaleX(-1)' : undefined,
+                transition: 'filter 0.3s ease',
+                opacity: cameraStatus === 'ready' ? 1 : 0,
+              }}
+            />
+            {activeFilter.tint && cameraStatus === 'ready' && (
+              <div className="absolute inset-0 pointer-events-none transition-colors duration-300"
                   style={{ backgroundColor: activeFilter.tint }} />
               )}
               {activeFilter.canvasEffect === 'vhs' && cameraStatus === 'ready' && (
@@ -347,10 +369,10 @@ export function CameraFilter({ onCapture, onClose }: CameraFilterProps) {
               )}
               {activeFilter.canvasEffect === 'glitch' && cameraStatus === 'ready' && (
                 <>
-                  <video autoPlay playsInline muted className="absolute inset-0 w-full h-full object-cover opacity-30 pointer-events-none"
+                  <video autoPlay playsInline muted className="absolute inset-0 w-full h-full object-contain opacity-30 pointer-events-none"
                     style={{ filter:'hue-rotate(180deg) saturate(3)', transform:isMirrored.current?'scaleX(-1) translateX(8px)':'translateX(8px)', mixBlendMode:'screen' }}
                     ref={el => { if (el && streamRef.current) el.srcObject = streamRef.current; }} />
-                  <video autoPlay playsInline muted className="absolute inset-0 w-full h-full object-cover opacity-20 pointer-events-none"
+                  <video autoPlay playsInline muted className="absolute inset-0 w-full h-full object-contain opacity-20 pointer-events-none"
                     style={{ filter:'hue-rotate(-90deg) saturate(2)', transform:isMirrored.current?'scaleX(-1) translateX(-6px)':'translateX(-6px)', mixBlendMode:'screen' }}
                     ref={el => { if (el && streamRef.current) el.srcObject = streamRef.current; }} />
                 </>
@@ -375,7 +397,6 @@ export function CameraFilter({ onCapture, onClose }: CameraFilterProps) {
                 </>
               )}
             </div>
-          )}
         </div>
 
         {/* ══ BOTTOM PANEL ════════════════════════════════════════════════ */}
@@ -432,29 +453,27 @@ export function CameraFilter({ onCapture, onClose }: CameraFilterProps) {
                   <div className="flex items-center gap-2">
                     {/* ← arrow */}
                     <button
-                      onClick={() => setFilterScroll(i => Math.max(0, i - 1))}
-                      disabled={filterScroll === 0}
-                      className="shrink-0 w-9 h-9 rounded-xl bg-comic-yellow border-2 border-comic-ink flex items-center justify-center text-comic-ink hover:shadow-comic-sm transition-all active:scale-90 disabled:opacity-0 disabled:pointer-events-none shadow-comic-sm"
+                      onClick={() => scrollFilters(-1)}
+                      className="hidden sm:flex shrink-0 w-9 h-9 rounded-xl bg-comic-yellow border-2 border-comic-ink items-center justify-center text-comic-ink hover:shadow-comic-sm transition-all active:scale-90 shadow-comic-sm"
                     >
                       <ChevronLeft className="w-5 h-5" />
                     </button>
 
                     {/* Filter pills */}
-                    <div className="flex gap-2 sm:gap-3 flex-1 justify-around overflow-hidden">
-                      {FILTERS.slice(filterScroll, filterScroll + VISIBLE).map((f, i) => {
-                        const idx = i + filterScroll;
-                        const isActive = idx === activeFilterIdx;
+                    <div ref={filterScrollRef} className="flex gap-2 sm:gap-3 flex-1 overflow-x-auto py-3 px-1 scrollbar-hide">
+                      {FILTERS.map((f, i) => {
+                        const isActive = i === activeFilterIdx;
                         return (
                           <button
                             key={f.id}
-                            onClick={() => setActiveFilterIdx(idx)}
-                            className={`flex flex-col items-center gap-1.5 transition-all duration-200 ${
-                              isActive ? '-translate-y-1' : 'opacity-65 hover:opacity-90 hover:-translate-y-0.5'
+                            onClick={() => setActiveFilterIdx(i)}
+                            className={`shrink-0 flex flex-col items-center gap-2 transition-all duration-200 ${
+                              isActive ? 'scale-110' : 'opacity-65 hover:opacity-90 hover:scale-105'
                             }`}
                           >
                             {/* Circle */}
                             <div
-                              className={`w-12 h-12 sm:w-14 sm:h-14 rounded-full border-4 flex items-center justify-center text-2xl sm:text-3xl relative transition-all ${
+                              className={`w-12 h-12 sm:w-16 sm:h-16 rounded-full border-4 flex items-center justify-center text-xl sm:text-2xl relative transition-all ${
                                 isActive ? 'border-comic-ink shadow-comic-sm' : 'border-comic-ink/40'
                               }`}
                               style={{ background: f.bg }}
@@ -467,16 +486,14 @@ export function CameraFilter({ onCapture, onClose }: CameraFilterProps) {
                             </div>
                             {/* Label */}
                             <span
-                              className={`font-heading font-black text-[11px] sm:text-xs leading-tight text-center w-12 sm:w-14 truncate transition-colors ${
+                              className={`font-heading font-black text-[10px] sm:text-[11px] leading-tight text-center w-12 sm:w-14 truncate transition-colors ${
                                 isActive ? 'text-comic-ink' : 'text-comic-ink/60'
                               }`}
                             >
                               {f.label}
                             </span>
                             {/* Active dot */}
-                            {isActive && (
-                              <div className="w-2 h-2 rounded-full bg-comic-ink -mt-0.5" />
-                            )}
+                            <div className={`w-1.5 h-1.5 rounded-full bg-comic-ink mt-0.5 transition-opacity ${isActive ? 'opacity-100' : 'opacity-0'}`} />
                           </button>
                         );
                       })}
@@ -484,45 +501,43 @@ export function CameraFilter({ onCapture, onClose }: CameraFilterProps) {
 
                     {/* → arrow */}
                     <button
-                      onClick={() => setFilterScroll(i => Math.min(maxScroll, i + 1))}
-                      disabled={filterScroll >= maxScroll}
-                      className="shrink-0 w-9 h-9 rounded-xl bg-comic-yellow border-2 border-comic-ink flex items-center justify-center text-comic-ink hover:shadow-comic-sm transition-all active:scale-90 disabled:opacity-0 disabled:pointer-events-none shadow-comic-sm"
+                      onClick={() => scrollFilters(1)}
+                      className="hidden sm:flex shrink-0 w-9 h-9 rounded-xl bg-comic-yellow border-2 border-comic-ink items-center justify-center text-comic-ink hover:shadow-comic-sm transition-all active:scale-90 shadow-comic-sm"
                     >
                       <ChevronRight className="w-5 h-5" />
                     </button>
                   </div>
                 ) : (
                   /* Overlays */
-                  <div className="flex gap-2 sm:gap-3 overflow-x-auto pb-1 scrollbar-hide">
+                  <div className="flex gap-2 sm:gap-3 overflow-x-auto py-3 px-2 scrollbar-hide">
                     {AR_OVERLAYS.map((ov, idx) => {
                       const isActive = idx === activeOverlayIdx;
                       return (
                         <button
                           key={ov.id}
                           onClick={() => setActiveOverlayIdx(idx)}
-                          className={`shrink-0 flex flex-col items-center gap-1.5 transition-all duration-200 ${
-                            isActive ? '-translate-y-1' : 'opacity-65 hover:opacity-90 hover:-translate-y-0.5'
+                          className={`shrink-0 flex flex-col items-center gap-2 transition-all duration-200 ${
+                            isActive ? 'scale-110' : 'opacity-65 hover:opacity-90 hover:scale-105'
                           }`}
                         >
                           <div
-                            className={`w-12 h-12 sm:w-14 sm:h-14 rounded-full border-4 flex items-center justify-center text-2xl sm:text-3xl bg-white relative transition-all ${
+                            className={`w-12 h-12 sm:w-16 sm:h-16 rounded-full border-4 flex items-center justify-center text-xl sm:text-2xl bg-white relative transition-all ${
                               isActive ? 'border-comic-teal shadow-comic-sm' : 'border-comic-ink/40'
                             }`}
                           >
                             {ov.id === 'none'
-                              ? <X className="w-6 h-6 text-comic-ink/50" />
+                              ? <X className="w-5 h-5 sm:w-6 sm:h-6 text-comic-ink/50" />
                               : <span className="leading-none">{Array.from(ov.emoji)[0]}</span>
                             }
                             {isActive && (
                               <div className="absolute inset-0 rounded-full border-4 border-comic-teal animate-ping opacity-20" />
                             )}
                           </div>
-                          <span className={`font-heading font-black text-[11px] sm:text-xs leading-tight text-center w-12 sm:w-14 truncate ${isActive ? 'text-comic-teal' : 'text-comic-ink/60'}`}>
+                          <span className={`font-heading font-black text-[10px] sm:text-[11px] leading-tight text-center w-12 sm:w-14 truncate ${isActive ? 'text-comic-teal' : 'text-comic-ink/60'}`}>
                             {ov.label}
                           </span>
-                          {isActive && (
-                            <div className="w-2 h-2 rounded-full bg-comic-teal -mt-0.5" />
-                          )}
+                          {/* Active dot */}
+                          <div className={`w-1.5 h-1.5 rounded-full bg-comic-teal mt-0.5 transition-opacity ${isActive ? 'opacity-100' : 'opacity-0'}`} />
                         </button>
                       );
                     })}
@@ -531,14 +546,14 @@ export function CameraFilter({ onCapture, onClose }: CameraFilterProps) {
               </div>
 
               {/* ── Shutter row ───────────────────────────────────────── */}
-              <div className="flex items-center justify-between">
+              <div className="relative flex items-center justify-center min-h-[96px]">
                 {/* Left info pill */}
-                <div className="flex flex-col gap-1">
-                  <span className="px-3 py-1 bg-comic-purple/15 border-2 border-comic-purple/40 rounded-full font-heading font-black text-xs text-comic-purple">
+                <div className="absolute left-0 flex flex-col gap-1 items-start z-10 pointer-events-none">
+                  <span className="px-3 py-1 bg-comic-purple/15 border-2 border-comic-purple/40 rounded-full font-heading font-black text-xs text-comic-purple whitespace-nowrap">
                     {activeFilter.emoji} {activeFilter.label}
                   </span>
                   {activeOverlay.id !== 'none' && (
-                    <span className="px-3 py-1 bg-comic-teal/15 border-2 border-comic-teal/40 rounded-full font-heading font-black text-xs text-comic-teal">
+                    <span className="px-3 py-1 bg-comic-teal/15 border-2 border-comic-teal/40 rounded-full font-heading font-black text-xs text-comic-teal whitespace-nowrap">
                       {Array.from(activeOverlay.emoji)[0]} {activeOverlay.label}
                     </span>
                   )}
@@ -549,7 +564,7 @@ export function CameraFilter({ onCapture, onClose }: CameraFilterProps) {
                   onClick={handleCapture}
                   disabled={isCapturing || cameraStatus !== 'ready'}
                   aria-label="Capture photo"
-                  className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-white border-4 border-comic-ink flex items-center justify-center hover:scale-105 active:scale-90 transition-all shadow-comic hover:shadow-comic-hover disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="relative z-20 w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-white border-4 border-comic-ink flex items-center justify-center hover:scale-105 active:scale-90 transition-all shadow-comic hover:shadow-comic-hover disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
                 >
                   <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-comic-pink border-4 border-white flex items-center justify-center hover:bg-comic-red transition-colors">
                     <Camera className="w-7 h-7 sm:w-8 sm:h-8 text-white" />
@@ -558,7 +573,7 @@ export function CameraFilter({ onCapture, onClose }: CameraFilterProps) {
                 </button>
 
                 {/* Right tip */}
-                <div className="flex flex-col items-center gap-1 w-[88px]">
+                <div className="absolute right-0 flex flex-col items-center gap-1 w-[88px] z-10 pointer-events-none">
                   <Sparkles className="w-5 h-5 text-comic-orange" />
                   <p className="text-center text-comic-ink/50 text-[10px] sm:text-xs font-heading font-black leading-tight">
                     Tap to capture
