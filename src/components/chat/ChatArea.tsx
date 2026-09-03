@@ -3,7 +3,7 @@ import { useEffect, useState, useRef } from 'react';
 import { Socket } from 'socket.io-client';
 import { useChatStore } from '@/store/chatStore';
 import { Button } from '@/components/ui/button';
-import { Send, MessageSquareDashed, SmilePlus, Download, X, Sparkles, ChevronLeft, Smile, Check, CheckCheck, Clock, Video } from 'lucide-react';
+import { Send, MessageSquareDashed, SmilePlus, Download, X, Sparkles, ChevronLeft, Smile, Check, CheckCheck, Clock, Video, CameraIcon } from 'lucide-react';
 import { Message, Sticker } from '@/lib/storage/types';
 import EmojiPicker, { Theme } from 'emoji-picker-react';
 import { MediaPicker } from './MediaPicker';
@@ -11,6 +11,7 @@ import { PowerShower } from './PowerShower';
 import { BulletShower } from './BulletShower';
 import { SwipeToReply } from './SwipeToReply';
 import { VideoChatPanel } from './VideoChatPanel';
+import { CameraFilter } from './CameraFilter';
 
 const BULLET_ACTIONS = [
   { id: 'chal bhag', emoji: '🏃‍♂️💨', label: 'chal bhag' },
@@ -47,6 +48,9 @@ export function ChatArea({ socket }: { socket: Socket | null }) {
   // Video Chat States
   const [showVideoCall, setShowVideoCall] = useState(false);
   const [videoStatus, setVideoStatus] = useState<{ active: boolean, users: string[] }>({ active: false, users: [] });
+
+  // Camera Filter State
+  const [showCameraFilter, setShowCameraFilter] = useState(false);
 
   useEffect(() => {
     fetch('/api/users')
@@ -372,6 +376,32 @@ export function ChatArea({ socket }: { socket: Socket | null }) {
       pendingId
     });
     setShowMediaPicker(false);
+    setReplyingTo(null);
+  };
+
+  const handleSendCameraPhoto = (dataUrl: string) => {
+    if (!socket || !currentUser || !activeRoomId) return;
+    const pendingId = `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const tempMessage: Message = {
+      id: pendingId,
+      roomId: activeRoomId,
+      userId: currentUser.id,
+      username: currentUser.username,
+      content: dataUrl,
+      type: 'sticker',
+      timestamp: Date.now(),
+      replyTo: replyingTo ? { id: replyingTo.id, username: replyingTo.username, content: replyingTo.content, type: replyingTo.type } : undefined
+    };
+    addMessage(tempMessage);
+    socket.emit('send_message', {
+      roomId: activeRoomId,
+      userId: currentUser.id,
+      username: currentUser.username,
+      content: dataUrl,
+      type: 'sticker',
+      replyTo: replyingTo ? { id: replyingTo.id, username: replyingTo.username, content: replyingTo.content, type: replyingTo.type } : undefined,
+      pendingId
+    });
     setReplyingTo(null);
   };
 
@@ -994,6 +1024,16 @@ export function ChatArea({ socket }: { socket: Socket | null }) {
             <SmilePlus className="w-6 h-6" />
           </button>
 
+          {/* Camera Filter button */}
+          <button
+            type="button"
+            onClick={() => { setShowMediaPicker(false); setShowCameraFilter(true); }}
+            className="h-[44px] w-[44px] flex items-center justify-center rounded-full border-2 border-transparent hover:border-comic-ink hover:bg-comic-pink/20 text-comic-ink transition-all shrink-0 mb-0.5 hover:-translate-y-0.5 hover:shadow-comic-sm"
+            title="Camera Filters (Snapchat style!)"
+          >
+            <CameraIcon className="w-6 h-6" />
+          </button>
+
           <textarea
             ref={inputRef}
             value={inputValue}
@@ -1064,6 +1104,14 @@ export function ChatArea({ socket }: { socket: Socket | null }) {
           <kbd className="font-heading px-1.5 py-0.5 bg-comic-ink/10 rounded-md border border-comic-ink/20">Enter</kbd> to send, <kbd className="font-heading px-1.5 py-0.5 bg-comic-ink/10 rounded-md border border-comic-ink/20">Shift + Enter</kbd> for new line
         </div>
       </div>
+
+      {/* Camera Filter Modal */}
+      {showCameraFilter && (
+        <CameraFilter
+          onCapture={handleSendCameraPhoto}
+          onClose={() => setShowCameraFilter(false)}
+        />
+      )}
 
       {/* Full-Screen Image Modal */}
       {fullScreenImage && (
