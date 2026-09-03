@@ -12,6 +12,7 @@ import { BulletShower } from './BulletShower';
 import { SwipeToReply } from './SwipeToReply';
 import { VideoChatPanel } from './VideoChatPanel';
 import { CameraFilter } from './CameraFilter';
+import { preloadFaceModel } from '@/hooks/useFaceTracking';
 
 const BULLET_ACTIONS = [
   { id: 'chal bhag', emoji: '🏃‍♂️💨', label: 'chal bhag' },
@@ -53,6 +54,9 @@ export function ChatArea({ socket }: { socket: Socket | null }) {
   const [showCameraFilter, setShowCameraFilter] = useState(false);
 
   useEffect(() => {
+    // Preload heavy ML model in background to prevent lag when filters are opened
+    preloadFaceModel();
+
     fetch('/api/users')
       .then(r => r.json())
       .then(data => {
@@ -684,17 +688,30 @@ export function ChatArea({ socket }: { socket: Socket | null }) {
                       
                       {item.msg.type === 'sticker' ? (
                         <div className="relative group/sticker inline-block p-1" id={`msg-${item.msg.id}`}>
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img 
-                            src={item.msg.content} 
-                            alt="Sticker" 
-                            onClick={() => setFullScreenImage(item.msg.content)}
-                            className={`max-w-[200px] max-h-[200px] object-contain hover:scale-105 transition-transform duration-200 cursor-pointer ${
-                              isOwn 
-                                ? 'rounded-2xl border-4 border-comic-ink shadow-comic bg-comic-yellow p-1.5' 
-                                : 'rounded-2xl border-4 border-comic-ink shadow-comic bg-white p-1.5'
-                            }`} 
-                          />
+                          {item.msg.content.startsWith('data:video/') ? (
+                            <video 
+                              src={item.msg.content} 
+                              autoPlay loop muted playsInline
+                              onClick={() => setFullScreenImage(item.msg.content)}
+                              className={`max-w-[200px] max-h-[200px] object-contain hover:scale-105 transition-transform duration-200 cursor-pointer ${
+                                isOwn 
+                                  ? 'rounded-2xl border-4 border-comic-ink shadow-comic bg-comic-yellow p-1.5' 
+                                  : 'rounded-2xl border-4 border-comic-ink shadow-comic bg-white p-1.5'
+                              }`} 
+                            />
+                          ) : (
+                            /* eslint-disable-next-line @next/next/no-img-element */
+                            <img 
+                              src={item.msg.content} 
+                              alt="Sticker" 
+                              onClick={() => setFullScreenImage(item.msg.content)}
+                              className={`max-w-[200px] max-h-[200px] object-contain hover:scale-105 transition-transform duration-200 cursor-pointer ${
+                                isOwn 
+                                  ? 'rounded-2xl border-4 border-comic-ink shadow-comic bg-comic-yellow p-1.5' 
+                                  : 'rounded-2xl border-4 border-comic-ink shadow-comic bg-white p-1.5'
+                              }`} 
+                            />
+                          )}
                         </div>
                       ) : item.msg.type === 'power' ? (
                         <div 
@@ -1133,12 +1150,16 @@ export function ChatArea({ socket }: { socket: Socket | null }) {
               className="max-w-full max-h-[90vh] overflow-y-auto rounded-2xl sm:rounded-3xl border-4 sm:border-8 border-comic-ink shadow-[8px_8px_0px_0px_#FFCC33] sm:shadow-[16px_16px_0px_0px_#FFCC33] bg-white [&::-webkit-scrollbar]:w-3 sm:[&::-webkit-scrollbar]:w-4 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-comic-pink [&::-webkit-scrollbar-thumb]:border-2 sm:[&::-webkit-scrollbar-thumb]:border-4 [&::-webkit-scrollbar-thumb]:border-comic-ink [&::-webkit-scrollbar-thumb]:rounded-full"
               onClick={(e) => e.stopPropagation()}
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img 
-                src={fullScreenImage} 
-                alt="Full Screen Preview" 
-                className="max-w-full h-auto block" 
-              />
+              {fullScreenImage.startsWith('data:video/') ? (
+                <video src={fullScreenImage} autoPlay loop playsInline controls className="max-w-full h-auto block" />
+              ) : (
+                /* eslint-disable-next-line @next/next/no-img-element */
+                <img 
+                  src={fullScreenImage} 
+                  alt="Full Screen Preview" 
+                  className="max-w-full h-auto block" 
+                />
+              )}
             </div>
           </div>
         </div>

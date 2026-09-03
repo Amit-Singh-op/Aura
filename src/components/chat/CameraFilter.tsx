@@ -2,9 +2,9 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   X, Camera, RotateCcw, Send, ChevronLeft, ChevronRight,
-  Sparkles, RefreshCcw, AlertCircle, Zap, Loader2, Check
+  Sparkles, RefreshCcw, AlertCircle, Zap, Loader2, Check, Video
 } from 'lucide-react';
-import { useFaceTracking } from '@/hooks/useFaceTracking';
+import { useFaceTracking, ActiveOverlay, preloadedMaskImages } from '@/hooks/useFaceTracking';
 
 // ─── Filter definitions ────────────────────────────────────────────────────────
 interface Filter {
@@ -33,6 +33,10 @@ const FILTERS: Filter[] = [
 
 const AR_OVERLAYS = [
   { id: 'none',     label: 'None',     emoji: '',        position: 'top'    },
+  { id: 'aviators', label: 'Aviators', emoji: '🕶️',     imageUrl: '/masks/aviators.svg' },
+  { id: 'joker',    label: 'Joker',    emoji: '🤡',      imageUrl: '/masks/joker.svg' },
+  { id: 'dog',      label: 'Dog',      emoji: '🐶',      imageUrl: '/masks/dog.svg' },
+  { id: 'banana',   label: 'Banana',   emoji: '🍌',      imageUrl: '/masks/real_banana.png' },
   { id: 'sparkles', label: 'Sparkles', emoji: '✨✨✨',   position: 'top'    },
   { id: 'crown',    label: 'Crown',    emoji: '👑',       position: 'top'    },
   { id: 'party',    label: 'Party',    emoji: '🎉🎊🥳',   position: 'top'    },
@@ -82,10 +86,34 @@ export function CameraFilter({ onCapture, onClose }: CameraFilterProps) {
   const [cameraStatus,     setCameraStatus]     = useState<'loading' | 'ready' | 'error'>('loading');
   const [cameraError,      setCameraError]      = useState('');
   const [capturedPhoto,    setCapturedPhoto]    = useState<string | null>(null);
+  const [capturedVideo,    setCapturedVideo]    = useState<string | null>(null);
   const [isCapturing,      setIsCapturing]      = useState(false);
+  const [isRecording,      setIsRecording]      = useState(false);
+  const [recordingTime,    setRecordingTime]    = useState(0);
   const [showFilters,      setShowFilters]      = useState(true);
   const [canFlip,          setCanFlip]          = useState(false);
   const filterScrollRef = useRef<HTMLDivElement>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const recordedChunksRef = useRef<Blob[]>([]);
+  const recordingTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const pressTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const isRecordingActionRef = useRef<boolean>(false);
+  const [loadedImages, setLoadedImages] = useState<Record<string, HTMLImageElement>>({});
+
+  useEffect(() => {
+    AR_OVERLAYS.forEach(ov => {
+      if (ov.imageUrl && !loadedImages[ov.id]) {
+        if (preloadedMaskImages[ov.imageUrl]) {
+          setLoadedImages(prev => ({...prev, [ov.id]: preloadedMaskImages[ov.imageUrl!]}));
+        } else {
+          const img = new window.Image();
+          img.src = ov.imageUrl;
+          img.onload = () => setLoadedImages(prev => ({...prev, [ov.id]: img}));
+        }
+      }
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const scrollFilters = (dir: 1 | -1) => {
     if (filterScrollRef.current) {
@@ -94,9 +122,10 @@ export function CameraFilter({ onCapture, onClose }: CameraFilterProps) {
   };
 
   const activeFilter  = FILTERS[activeFilterIdx];
-  const activeOverlay = AR_OVERLAYS[activeOverlayIdx];
+  const baseOverlay = AR_OVERLAYS[activeOverlayIdx];
+  const activeOverlay = { ...baseOverlay, image: baseOverlay.imageUrl ? loadedImages[baseOverlay.id] : undefined };
 
-  const { isModelLoaded } = useFaceTracking(videoRef, canvasRef, activeOverlay, isMirrored.current);
+  const { isModelLoaded } = useFaceTracking(videoRef, canvasRef, activeOverlay as ActiveOverlay, isMirrored.current, activeFilter.cssFilter, activeFilter.tint);
 
   // ── Stop stream & close ────────────────────────────────────────────────────
   // Use a plain object ref so React StrictMode double-invoke can't null it
@@ -208,43 +237,55 @@ export function CameraFilter({ onCapture, onClose }: CameraFilterProps) {
     startCamera(next);
   };
 
-  // ── Canvas capture ────────────────────────────────────────────────────────
   const handleCapture = () => {
-    if (!videoRef.current || isCapturing || cameraStatus !== 'ready') return;
+    if (!canvasRef.current || isCapturing || cameraStatus !== 'ready') return;
     setIsCapturing(true);
-    const v = videoRef.current;
-    const w = v.videoWidth || 640, h = v.videoHeight || 480;
-    const cvs = document.createElement('canvas');
-    cvs.width = w; cvs.height = h;
-    const ctx = cvs.getContext('2d')!;
-    if (isMirrored.current) { ctx.translate(w, 0); ctx.scale(-1, 1); }
-    ctx.filter = activeFilter.cssFilter !== 'none' ? activeFilter.cssFilter : '';
-    ctx.drawImage(v, 0, 0, w, h);
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-    if (activeFilter.tint) { ctx.fillStyle = activeFilter.tint; ctx.fillRect(0, 0, w, h); }
-    if (activeFilter.canvasEffect === 'glitch') {
-      for (let i = 0; i < 6; i++) {
-        try { const y=Math.random()*h, img=ctx.getImageData(0,y,w,18); ctx.putImageData(img,(Math.random()-.5)*40,y); } catch { /**/ }
-      }
-    } else if (activeFilter.canvasEffect === 'pixelate') {
-      const sz=12, t=document.createElement('canvas');
-      t.width=Math.max(1,Math.floor(w/sz)); t.height=Math.max(1,Math.floor(h/sz));
-      t.getContext('2d')!.drawImage(cvs,0,0,t.width,t.height);
-      ctx.imageSmoothingEnabled=false; ctx.drawImage(t,0,0,w,h);
-    } else if (activeFilter.canvasEffect === 'vhs') {
-      ctx.fillStyle='rgba(0,0,0,0.09)';
-      for (let y=0; y<h; y+=4) ctx.fillRect(0,y,w,1);
-    }
-    
-    // Draw AR Tracking Canvas onto the final photo
-    if (canvasRef.current) {
-      ctx.drawImage(canvasRef.current, 0, 0, w, h);
-    }
-    setCapturedPhoto(cvs.toDataURL('image/jpeg', 0.92));
+    // The unified canvas already has the video drawn to it along with the AR overlays!
+    setCapturedPhoto(canvasRef.current.toDataURL('image/jpeg', 0.92));
     setIsCapturing(false);
   };
 
+  // ── Video capture (GIFs) ──────────────────────────────────────────────────
+  const startRecording = () => {
+    if (!canvasRef.current || cameraStatus !== 'ready') return;
+    recordedChunksRef.current = [];
+    const stream = canvasRef.current.captureStream(30);
+    const mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
+    
+    mediaRecorder.ondataavailable = (e) => {
+      if (e.data.size > 0) recordedChunksRef.current.push(e.data);
+    };
+    mediaRecorder.onstop = () => {
+      const blob = new Blob(recordedChunksRef.current, { type: 'video/webm' });
+      setCapturedVideo(URL.createObjectURL(blob));
+    };
+    
+    mediaRecorderRef.current = mediaRecorder;
+    mediaRecorder.start();
+    setIsRecording(true);
+    setRecordingTime(0);
+    recordingTimerRef.current = setInterval(() => setRecordingTime(t => t + 1), 1000);
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+      mediaRecorderRef.current.stop();
+    }
+    if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
+    setIsRecording(false);
+  };
+
   const handleSend = () => {
+    if (capturedVideo) {
+      const reader = new FileReader();
+      const blob = new Blob(recordedChunksRef.current, { type: 'video/webm' });
+      reader.onloadend = () => {
+         onCapture(reader.result as string);
+         stopStream(); onClose();
+      };
+      reader.readAsDataURL(blob);
+      return;
+    }
     if (!capturedPhoto) return;
     onCapture(capturedPhoto); stopStream(); onClose();
   };
@@ -340,11 +381,15 @@ export function CameraFilter({ onCapture, onClose }: CameraFilterProps) {
             </div>
           )}
 
-          {/* Captured photo */}
-          {capturedPhoto && (
-            <div className="absolute inset-0 bg-black z-10">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={capturedPhoto} alt="Captured snap" className="w-full h-full object-contain" />
+          {/* Captured photo or video preview */}
+          {(capturedPhoto || capturedVideo) && (
+            <div className="absolute inset-0 bg-black z-10 flex items-center justify-center">
+              {capturedVideo ? (
+                <video src={capturedVideo} autoPlay loop playsInline className="w-full h-full object-contain" />
+              ) : (
+                /* eslint-disable-next-line @next/next/no-img-element */
+                <img src={capturedPhoto!} alt="Captured snap" className="w-full h-full object-contain" />
+              )}
               {/* halftone comic texture overlay */}
               <div className="absolute inset-0 pointer-events-none"
                 style={{ backgroundImage:'radial-gradient(rgba(43,27,61,0.035) 1px,transparent 1px)', backgroundSize:'8px 8px' }} />
@@ -352,16 +397,11 @@ export function CameraFilter({ onCapture, onClose }: CameraFilterProps) {
           )}
 
           {/* Live feed */}
-          <div className={`absolute inset-0 ${capturedPhoto ? 'invisible' : ''}`}>
-            <video ref={videoRef} autoPlay playsInline muted className="absolute inset-0 w-full h-full object-contain bg-black"
-              style={{
-                filter: activeFilter.cssFilter !== 'none' ? activeFilter.cssFilter : undefined,
-                transform: isMirrored.current ? 'scaleX(-1)' : undefined,
-                transition: 'filter 0.3s ease',
-                opacity: cameraStatus === 'ready' ? 1 : 0,
-              }}
-            />
-            {/* AR Tracking Canvas */}
+          <div className={`absolute inset-0 ${capturedPhoto || capturedVideo ? 'invisible' : ''}`}>
+            {/* The video element is now hidden visually since the Canvas handles drawing it! */}
+            <video ref={videoRef} autoPlay playsInline muted className="absolute inset-0 w-full h-full object-contain opacity-0 pointer-events-none" />
+            
+            {/* Unified AR Tracking Canvas */}
             <canvas ref={canvasRef} className="absolute inset-0 w-full h-full object-contain pointer-events-none z-10" />
 
             {activeFilter.tint && cameraStatus === 'ready' && (
@@ -397,10 +437,10 @@ export function CameraFilter({ onCapture, onClose }: CameraFilterProps) {
         {/* ══ BOTTOM PANEL ════════════════════════════════════════════════ */}
         <div className="shrink-0 bg-comic-bg">
 
-          {capturedPhoto ? (
+          {(capturedPhoto || capturedVideo) ? (
             /* ── Retake / Send ── */
             <div className="flex items-stretch gap-4 p-4 sm:p-5">
-              <button onClick={() => setCapturedPhoto(null)}
+              <button onClick={() => { setCapturedPhoto(null); setCapturedVideo(null); }}
                 className="flex-1 py-3.5 rounded-2xl bg-white border-4 border-comic-ink font-heading font-black text-comic-ink text-lg shadow-comic-sm hover:-translate-y-0.5 hover:shadow-comic transition-all active:translate-y-0.5 active:shadow-none flex items-center justify-center gap-2">
                 <RotateCcw className="w-5 h-5" /> Retake
               </button>
@@ -554,27 +594,48 @@ export function CameraFilter({ onCapture, onClose }: CameraFilterProps) {
                   )}
                 </div>
 
-                {/* Shutter button */}
+                {/* Shutter button with Hold-to-Record */}
                 <button
-                  onClick={handleCapture}
+                  onPointerDown={(e) => {
+                    if (cameraStatus !== 'ready' || isCapturing) return;
+                    e.currentTarget.setPointerCapture(e.pointerId);
+                    pressTimerRef.current = setTimeout(() => {
+                       startRecording();
+                       isRecordingActionRef.current = true;
+                    }, 400);
+                  }}
+                  onPointerUp={(e) => {
+                    e.currentTarget.releasePointerCapture(e.pointerId);
+                    if (pressTimerRef.current) clearTimeout(pressTimerRef.current);
+                    if (isRecordingActionRef.current) {
+                       stopRecording();
+                       isRecordingActionRef.current = false;
+                    } else {
+                       handleCapture();
+                    }
+                  }}
                   disabled={isCapturing || cameraStatus !== 'ready'}
-                  aria-label="Capture photo"
-                  className="relative z-20 w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-white border-4 border-comic-ink flex items-center justify-center hover:scale-105 active:scale-90 transition-all shadow-comic hover:shadow-comic-hover disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
+                  aria-label="Capture photo or hold for video"
+                  className={`relative z-20 w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-white border-4 border-comic-ink flex items-center justify-center transition-all shadow-comic hover:shadow-comic-hover disabled:opacity-40 disabled:cursor-not-allowed shrink-0 ${isRecording ? 'scale-110 shadow-comic-sm' : 'hover:scale-105 active:scale-90'}`}
                 >
-                  <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-comic-pink border-4 border-white flex items-center justify-center hover:bg-comic-red transition-colors">
-                    <Camera className="w-7 h-7 sm:w-8 sm:h-8 text-white" />
+                  <div className={`w-14 h-14 sm:w-16 sm:h-16 rounded-full border-4 flex items-center justify-center transition-colors ${isRecording ? 'bg-comic-red border-comic-red animate-pulse' : 'bg-comic-pink border-white hover:bg-comic-red'}`}>
+                    {isRecording ? (
+                       <span className="font-heading font-black text-white text-lg">{recordingTime}s</span>
+                    ) : (
+                       <Camera className="w-7 h-7 sm:w-8 sm:h-8 text-white" />
+                    )}
                   </div>
                   {isCapturing && <div className="absolute inset-0 rounded-full border-4 border-comic-yellow animate-ping" />}
                 </button>
 
                 {/* Right tip */}
                 <div className="absolute right-0 flex flex-col items-center gap-1 w-[88px] z-10 pointer-events-none">
-                  <Sparkles className="w-5 h-5 text-comic-orange" />
+                  <Video className="w-5 h-5 text-comic-orange" />
                   <p className="text-center text-comic-ink/50 text-[10px] sm:text-xs font-heading font-black leading-tight">
-                    Tap to capture
+                    Hold for GIF
                   </p>
                   <p className="text-center text-comic-ink/40 text-[9px] font-heading font-bold leading-tight">
-                    & send to chat
+                    Tap for Photo
                   </p>
                 </div>
               </div>

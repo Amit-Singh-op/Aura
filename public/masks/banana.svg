@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <g transform="translate(100, 120)">
+    <!-- Back Peel (hanging down back right) -->
+    <path d="M 5 -40 Q 60 20 70 60 Q 40 60 0 30 Z" fill="#D4A017" stroke="#8B6508" stroke-width="3" stroke-linejoin="round"/>
+    
+    <!-- Exposed Banana Fruit (straight up into mouth) -->
+    <path d="M -18 -100 C -18 -120 -5 -120 0 -120 C 5 -120 18 -120 18 -100 L 15 0 L -15 0 Z" fill="#FFFACD" stroke="#EEDD82" stroke-width="4" stroke-linejoin="round"/>
+    <!-- Small brown tip on top -->
+    <path d="M -5 -120 Q 0 -125 5 -120 Z" fill="#8B5A2B"/>
+    <!-- Fruit texture lines -->
+    <path d="M -5 -110 L -5 -20 M 5 -100 L 5 -10" fill="none" stroke="#EEDD82" stroke-width="2" stroke-dasharray="10,5"/>
+
+    <!-- Left Peel (hanging down left) -->
+    <path d="M -15 -30 Q -80 0 -70 50 Q -30 40 0 10 Z" fill="#FFCC33" stroke="#D4A017" stroke-width="4" stroke-linejoin="round"/>
+    <path d="M -15 -30 Q -60 -10 -70 50" fill="none" stroke="#FFFACD" stroke-width="2"/>
+
+    <!-- Right Peel (hanging down right) -->
+    <path d="M 15 -30 Q 80 0 70 50 Q 30 40 0 10 Z" fill="#FFCC33" stroke="#D4A017" stroke-width="4" stroke-linejoin="round"/>
+    <path d="M 15 -30 Q 60 -10 70 50" fill="none" stroke="#FFFACD" stroke-width="2"/>
+
+    <!-- Front Peel (hanging straight down) -->
+    <path d="M -10 -20 Q -20 60 0 80 Q 20 60 10 -20 Z" fill="#FFCC33" stroke="#D4A017" stroke-width="4" stroke-linejoin="round"/>
+    
+    <!-- Stem at bottom -->
+    <path d="M -15 70 L 0 95 L 15 70 Z" fill="#8B5A2B" stroke="#5C3A21" stroke-width="3" stroke-linejoin="round"/>
+  </g>
+</svg>
