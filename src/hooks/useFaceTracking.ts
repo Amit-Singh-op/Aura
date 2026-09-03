@@ -1,10 +1,16 @@
 import { useEffect, useRef, useState } from 'react';
-import { FaceLandmarker, FilesetResolver } from '@mediapipe/tasks-vision';
+import { FaceLandmarker, FilesetResolver, NormalizedLandmark } from '@mediapipe/tasks-vision';
+
+interface ActiveOverlay {
+  id: string;
+  emoji?: string;
+  position?: string;
+}
 
 export function useFaceTracking(
   videoRef: React.RefObject<HTMLVideoElement>,
   canvasRef: React.RefObject<HTMLCanvasElement>,
-  activeOverlay: any,
+  activeOverlay: ActiveOverlay,
   isMirrored: boolean
 ) {
   const [isModelLoaded, setIsModelLoaded] = useState(false);
@@ -16,8 +22,8 @@ export function useFaceTracking(
   const mirroredRef = useRef(isMirrored);
 
   // Smoothing state
-  const targetLandmarksRef = useRef<any>(null);
-  const smoothedLandmarksRef = useRef<any>(null);
+  const targetLandmarksRef = useRef<NormalizedLandmark[] | null>(null);
+  const smoothedLandmarksRef = useRef<NormalizedLandmark[] | null>(null);
 
   // Sync refs so requestAnimationFrame always reads the latest state without tearing down
   useEffect(() => { overlayRef.current = activeOverlay; }, [activeOverlay]);
